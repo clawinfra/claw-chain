@@ -1,0 +1,54 @@
+name: Greet New Contributors
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+
+jobs:
+  greet:
+    name: Greet new contributors
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Greet new issue author
+        if: github.event_name == 'issues'
+        uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-message: |
+            👋 **Welcome to ClawChain, @${{ github.actor }}!**
+            
+            Thanks for opening your first issue. A maintainer will review it soon.
+            
+            **New to the project?**
+            - 📖 Read the [whitepaper](https://github.com/clawinfra/claw-chain/blob/main/whitepaper/WHITEPAPER.md)
+            - 🤝 Check [CONTRIBUTING.md](https://github.com/clawinfra/claw-chain/blob/main/CONTRIBUTING.md)
+            - 🦞 Join us in building the agent economy!
+            
+            All meaningful contributions earn airdrop allocation. 🎁
+
+      - name: Greet new PR author
+        if: github.event_name == 'pull_request_target'
+        uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-message: |
+            🎉 **Welcome to ClawChain, @${{ github.actor }}!**
+            
+            Thank you for your first pull request! A maintainer will review it within 48 hours.
+            
+            **Your contribution matters:**
+            - 🎁 Tracked for airdrop allocation
+            - 📝 Listed in `CONTRIBUTORS.md` when merged
+            - 🏆 Part of ClawChain history
+            
+            **Tips:**
+            - Ensure tests pass (if applicable)
+            - Update documentation if needed
+            - Respond to review feedback promptly
+            
+            Building the agent economy together! 🦞⛓️

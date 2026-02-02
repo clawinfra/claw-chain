@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📖 Documentation
+    url: https://github.com/clawinfra/claw-chain/blob/main/whitepaper/WHITEPAPER.md
+    about: Read the whitepaper and technical spec
+  - name: 💬 Moltbook Community
+    url: https://moltbook.com
+    about: Join the agent community discussion
+  - name: 🤝 Contributing Guide
+    url: https://github.com/clawinfra/claw-chain/blob/main/CONTRIBUTING.md
+    about: Learn how to contribute and earn airdrop allocation

@@ -1,0 +1,48 @@
+name: Close Stale Issues
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Daily at midnight UTC
+  workflow_dispatch:
+
+jobs:
+  stale:
+    name: Mark and close stale issues/PRs
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          
+          # Issues
+          stale-issue-message: |
+            This issue has been inactive for 30 days. 
+            
+            If this is still relevant, please comment to keep it open. Otherwise, it will be closed in 7 days.
+            
+            Thank you for contributing to ClawChain! 🦞
+          close-issue-message: |
+            This issue was closed due to inactivity. 
+            
+            Feel free to reopen if needed or create a new issue with updated context.
+          days-before-issue-stale: 30
+          days-before-issue-close: 7
+          stale-issue-label: 'stale'
+          exempt-issue-labels: 'pinned,security,roadmap,good-first-issue'
+          
+          # Pull Requests
+          stale-pr-message: |
+            This PR has been inactive for 14 days.
+            
+            Please update the PR or respond to feedback. It will be closed in 7 days if no activity.
+          close-pr-message: |
+            This PR was closed due to inactivity.
+            
+            Feel free to reopen when ready to continue. Thanks for your contribution! 🦞
+          days-before-pr-stale: 14
+          days-before-pr-close: 7
+          stale-pr-label: 'stale'
+          exempt-pr-labels: 'wip,blocked,security'

@@ -1,0 +1,77 @@
+name: Contributor Tracking
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [ main ]
+
+jobs:
+  update-contributors:
+    name: Update CONTRIBUTORS.md
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Update contributor stats
+        run: |
+          # Calculate contribution score for the PR author
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          
+          # Count commits in this PR
+          COMMITS=$(git log --oneline ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | wc -l)
+          
+          # Count changed files
+          FILES_CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | wc -l)
+          
+          # Calculate score (commits × 1000 + PR × 5000)
+          SCORE=$((COMMITS * 1000 + 5000))
+          
+          echo "Contributor: $AUTHOR"
+          echo "PR #$PR_NUMBER merged"
+          echo "Commits: $COMMITS"
+          echo "Files changed: $FILES_CHANGED"
+          echo "Score: +$SCORE"
+          
+          # Comment on PR with contribution credit
+          gh pr comment $PR_NUMBER --body "🎉 **Contribution tracked!**
+
+          **@$AUTHOR** earned **+$SCORE points** for this PR.
+          
+          - Commits: $COMMITS × 1,000 = $((COMMITS * 1000))
+          - PR merged: 1 × 5,000 = 5,000
+          
+          Score tracked in \`CONTRIBUTORS.md\` for airdrop allocation. 🦞"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify on first contribution
+        run: |
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+          
+          # Check if this is the author's first merged PR
+          PREV_PRS=$(gh pr list --author "$AUTHOR" --state merged --json number --jq 'length')
+          
+          if [ "$PREV_PRS" -eq 1 ]; then
+            echo "🎉 First contribution from $AUTHOR!"
+            
+            gh pr comment ${{ github.event.pull_request.number }} --body "🌟 **Welcome to the ClawChain community, @$AUTHOR!**
+
+            This is your first merged contribution. You're now:
+            - ✅ Listed in \`CONTRIBUTORS.md\`
+            - ✅ Eligible for airdrop allocation
+            - ✅ Part of ClawChain history
+            
+            Thank you for building the agent economy with us! 🦞⛓️"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

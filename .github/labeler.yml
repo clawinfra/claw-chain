@@ -1,0 +1,58 @@
+# Auto-labeler configuration for PRs
+
+documentation:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - '**/*.md'
+      - 'docs/**'
+      - 'whitepaper/**'
+
+whitepaper:
+  - changed-files:
+    - any-glob-to-any-file: 'whitepaper/**'
+
+tokenomics:
+  - changed-files:
+    - any-glob-to-any-file: 'whitepaper/TOKENOMICS.md'
+
+technical-spec:
+  - changed-files:
+    - any-glob-to-any-file: 'whitepaper/TECHNICAL_SPEC.md'
+
+core:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'core/**'
+      - 'runtime/**'
+      - 'pallets/**'
+
+smart-contracts:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'contracts/**'
+      - '**/*.rs'
+
+sdk:
+  - changed-files:
+    - any-glob-to-any-file: 'sdk/**'
+
+ci-cd:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/**'
+      - '.github/**.yml'
+
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'package.json'
+      - 'package-lock.json'
+
+tests:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*_test.rs'
+      - '**/*.test.js'
+      - 'tests/**'
