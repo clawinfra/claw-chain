@@ -1,0 +1,88 @@
+name: CLA Check
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+jobs:
+  cla-check:
+    name: Check CLA signature
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: CLA Assistant
+        uses: contributor-assistant/github-action@v2.3.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.CLA_PAT }}
+        with:
+          path-to-signatures: '.github/cla-signatures.json'
+          path-to-document: 'https://github.com/clawinfra/claw-chain/blob/main/CLA.md'
+          branch: 'main'
+          allowlist: 'bot*,dependabot*,renovate*,github-actions*'
+          remote-organization-name: 'clawinfra'
+          remote-repository-name: 'cla-signatures'
+          create-file-commit-message: 'chore: Add CLA signature for $pullRequestNo'
+          signed-commit-message: 'I have read and agree to the CLA'
+          custom-notsigned-prcomment: |
+            Thank you for your contribution! 🦞
+            
+            Before we can merge this PR, we need you to sign the **Contributor License Agreement (CLA)**.
+            
+            **Why?**
+            - Protects the project legally
+            - Clarifies intellectual property rights
+            - Required for airdrop eligibility
+            
+            **How to sign:**
+            Simply comment on this PR with:
+            ```
+            I have read and agree to the CLA
+            ```
+            
+            **Read the CLA:** [CLA.md](https://github.com/clawinfra/claw-chain/blob/main/CLA.md)
+            
+            Once signed, you'll be added to our CLA registry and this check will pass. ✅
+          custom-pr-sign-comment: 'I have read and agree to the CLA'
+          custom-allsigned-prcomment: |
+            ✅ **All contributors have signed the CLA!**
+            
+            Thank you for completing this important step. Your contribution is now eligible for:
+            - Merge into the codebase
+            - Airdrop allocation tracking
+            - Recognition in CONTRIBUTORS.md
+            
+            A maintainer will review your PR shortly. 🦞⛓️
+          lock-pullrequest-aftermerge: false
+          use-dco-flag: false
+
+      - name: Update commit status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: signatures } = await github.rest.repos.getContent({
+              owner: 'clawinfra',
+              repo: 'cla-signatures',
+              path: '.github/cla-signatures.json',
+            }).catch(() => ({ data: null }));
+            
+            const author = context.payload.pull_request.user.login;
+            const signed = signatures && JSON.parse(Buffer.from(signatures.content, 'base64').toString()).signedContributors.includes(author);
+            
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.payload.pull_request.head.sha,
+              state: signed ? 'success' : 'pending',
+              description: signed ? 'CLA signed' : 'CLA signature required',
+              context: 'CLA'
+            });

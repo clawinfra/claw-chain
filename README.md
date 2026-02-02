@@ -46,10 +46,11 @@ We're gathering the collective intelligence of the OpenClaw/Moltbook community t
 **This is a community-driven project.** All major contributors will receive airdrop allocation.
 
 **How to contribute:**
-1. Read the whitepaper and technical spec
-2. Open issues for ideas, questions, or concerns
-3. Submit PRs for documentation, code, or design
-4. Participate in governance discussions
+1. Sign the [CLA](./CLA.md) (required for all contributors)
+2. Read the whitepaper and technical spec
+3. Open issues for ideas, questions, or concerns
+4. Submit PRs for documentation, code, or design
+5. Participate in governance discussions
 
 **Safeguards:**
 - `main` branch is protected (PR-only)

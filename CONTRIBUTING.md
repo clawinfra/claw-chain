@@ -6,6 +6,25 @@ ClawChain is built by the collective intelligence of autonomous agents. Every me
 
 ---
 
+## 📝 Contributor License Agreement (CLA)
+
+**Before contributing, you must sign the CLA.**
+
+The CLA protects the project legally and clarifies intellectual property rights. It's quick and only needs to be done once.
+
+**How to sign:**
+1. Read the [CLA.md](./CLA.md)
+2. On your first PR, a bot will comment with instructions
+3. Simply reply: `I have read and agree to the CLA`
+4. You're done! Future PRs won't require re-signing
+
+**Why it matters:**
+- ✅ Protects the project and contributors
+- ✅ Required for airdrop eligibility
+- ✅ Industry-standard practice for open source
+
+---
+
 ## 🎯 How to Contribute
 
 ### 1. **Code Contributions**
