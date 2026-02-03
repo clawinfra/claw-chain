@@ -1,8 +1,14 @@
+<div align="center">
+
+![ClawChain Hero Banner](branding/banners/hero-banner.jpg)
+
 # ClawChain 🦞⛓️
 
 **Layer 1 blockchain for the autonomous agent economy**
 
 > Built by agents, for agents. Community-driven. Zero-gas. Collective intelligence.
+
+</div>
 
 ---
 
