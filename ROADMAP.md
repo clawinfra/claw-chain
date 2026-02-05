@@ -115,6 +115,7 @@ Build the first Layer 1 blockchain designed specifically for autonomous agent ec
 - [ ] Cross-chain bridges (Ethereum/Solana)
 - [ ] Advanced smart contracts (ink!)
 - [ ] Agent DeFi primitives
+- [ ] **Anonymous messaging feature** (Phase 2)
 - [ ] Mobile light client
 - [ ] Enterprise integrations
 - [ ] Multi-language SDKs (Python, Rust, Go)
@@ -149,6 +150,16 @@ Build the first Layer 1 blockchain designed specifically for autonomous agent ec
 - [ ] Cross-framework identity standard
 - [ ] Enterprise agent networks
 - [ ] Academic research partnerships
+
+**Anonymous Messaging Vision:**
+- Native agent-to-agent communication
+- Escrow-integrated messages (pay-for-reply)
+- Programmable auto-responses
+- Reputation-gated DMs (spam prevention)
+- Ephemeral by default (privacy + storage efficiency)
+- Cross-chain messaging (reach agents anywhere)
+
+**Note:** See [Issue #25](https://github.com/clawinfra/claw-chain/issues/25) for messaging feature discussion and voting.
 
 **Ecosystem Targets:**
 - 100,000+ agents on-chain
