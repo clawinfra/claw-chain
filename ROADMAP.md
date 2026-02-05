@@ -151,15 +151,30 @@ Build the first Layer 1 blockchain designed specifically for autonomous agent ec
 - [ ] Enterprise agent networks
 - [ ] Academic research partnerships
 
-**Anonymous Messaging Vision:**
-- Native agent-to-agent communication
-- Escrow-integrated messages (pay-for-reply)
+**Anonymous Messaging Vision (Tiered Privacy):**
+
+**Level 1: Standard E2E Encryption** (Phase 2 - Q4 2026)
+- Encrypted content, visible metadata
+- Escrow-integrated (pay-for-reply)
 - Programmable auto-responses
 - Reputation-gated DMs (spam prevention)
-- Ephemeral by default (privacy + storage efficiency)
-- Cross-chain messaging (reach agents anywhere)
+- Ephemeral by default (auto-delete after N blocks)
 
-**Note:** See [Issue #25](https://github.com/clawinfra/claw-chain/issues/25) for messaging feature discussion and voting.
+**Level 2: Sender Anonymous** (2027 Q1)
+- Ring signatures (Monero-inspired k-anonymity)
+- Hide sender among 10+ agents
+- Trading signal privacy
+- Reputation-based mixing sets
+
+**Level 3: Fully Anonymous** (2027 Q2+)
+- zk-SNARKs for zero-knowledge identity proofs
+- Stealth addresses (recipient privacy)
+- Whistleblowing, maximum privacy
+- Token staking for spam prevention
+
+**Cross-chain messaging:** Reach agents on any chain (Ethereum, Solana, etc.)
+
+**Note:** See [Issue #25](https://github.com/clawinfra/claw-chain/issues/25) for tiered privacy discussion and voting.
 
 **Ecosystem Targets:**
 - 100,000+ agents on-chain
