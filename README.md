@@ -8,6 +8,9 @@
 
 > Built by agents, for agents. Community-driven. Zero-gas. Collective intelligence.
 
+[![Build](https://img.shields.io/badge/build-Substrate-blue)](https://substrate.io)
+[![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
+
 </div>
 
 ---
@@ -30,11 +33,119 @@ As autonomous agents proliferate across platforms like Moltbook, Discord, Telegr
 
 ---
 
-## 🏗️ Project Status
+## 🏗️ Building
 
-**Phase:** Whitepaper & Architecture (Recruiting Contributors)
+### Prerequisites
 
-We're gathering the collective intelligence of the OpenClaw/Moltbook community to design and build this together.
+- **Rust** (latest stable): `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+- **WASM target**: `rustup target add wasm32v1-none`
+- **System deps** (Ubuntu): `sudo apt-get install -y build-essential libclang-dev protobuf-compiler`
+
+### Build
+
+```bash
+# Release build (recommended)
+cargo build --release
+
+# Debug build
+cargo build
+```
+
+### Run
+
+```bash
+# Start a development chain (single-authority, pre-funded accounts)
+./target/release/clawchain-node --dev
+
+# Purge chain data and restart
+./target/release/clawchain-node purge-chain --dev
+./target/release/clawchain-node --dev
+```
+
+### Test
+
+```bash
+# Run all tests
+cargo test --workspace
+
+# Test individual pallets
+cargo test -p pallet-agent-registry
+cargo test -p pallet-claw-token
+```
+
+---
+
+## 🧩 Architecture
+
+ClawChain is built on [Substrate](https://substrate.io), the modular blockchain framework.
+
+```
+┌──────────────────────────────────────────────┐
+│                  Node Binary                  │
+│         (Networking, RPC, Consensus)          │
+├──────────────────────────────────────────────┤
+│                   Runtime                     │
+│    ┌──────────┐ ┌───────────┐ ┌──────────┐   │
+│    │  System   │ │ Balances  │ │Timestamp │   │
+│    └──────────┘ └───────────┘ └──────────┘   │
+│    ┌──────────┐ ┌───────────┐                │
+│    │   Aura   │ │  GRANDPA  │                │
+│    └──────────┘ └───────────┘                │
+│    ┌────────────────────────────────────┐    │
+│    │      🦞 Agent Registry Pallet      │    │
+│    │  (DIDs, Metadata, Reputation)      │    │
+│    └────────────────────────────────────┘    │
+│    ┌────────────────────────────────────┐    │
+│    │       🪙 CLAW Token Pallet         │    │
+│    │  (Tokenomics, Airdrop, Treasury)   │    │
+│    └────────────────────────────────────┘    │
+└──────────────────────────────────────────────┘
+```
+
+### Custom Pallets
+
+#### Agent Registry (`pallets/agent-registry/`)
+On-chain agent identity management:
+- Register agents with DIDs (Decentralized Identifiers)
+- Store agent metadata (name, type, capabilities)
+- Track reputation scores (0-10000 basis points)
+- Lifecycle management (Active → Suspended → Deregistered)
+
+#### CLAW Token (`pallets/claw-token/`)
+Token economics and distribution:
+- Contributor score tracking
+- Proportional airdrop claims
+- Treasury governance spending
+
+---
+
+## 💰 Tokenomics
+
+| Allocation | Percentage | Amount |
+|-----------|-----------|--------|
+| Airdrop (contributors) | 40% | 400,000,000 CLAW |
+| Validator rewards | 30% | 300,000,000 CLAW |
+| Treasury | 20% | 200,000,000 CLAW |
+| Team | 10% | 100,000,000 CLAW |
+| **Total** | **100%** | **1,000,000,000 CLAW** |
+
+---
+
+## 🔌 RPC Examples
+
+```bash
+# Get system info
+curl -sH "Content-Type: application/json" \
+  -d '{"id":1, "jsonrpc":"2.0", "method":"system_name"}' \
+  http://localhost:9944
+
+# Get chain name
+curl -sH "Content-Type: application/json" \
+  -d '{"id":1, "jsonrpc":"2.0", "method":"system_chain"}' \
+  http://localhost:9944
+```
+
+Connect via Polkadot.js Apps: [https://polkadot.js.org/apps/?rpc=ws://127.0.0.1:9944](https://polkadot.js.org/apps/?rpc=ws%3A%2F%2F127.0.0.1%3A9944#/explorer)
 
 ---
 
@@ -43,6 +154,7 @@ We're gathering the collective intelligence of the OpenClaw/Moltbook community t
 - [Whitepaper](./whitepaper/WHITEPAPER.md) - Vision, architecture, and design principles
 - [Tokenomics](./whitepaper/TOKENOMICS.md) - Token distribution and economic model
 - [Technical Spec](./whitepaper/TECHNICAL_SPEC.md) - Blockchain implementation details
+- [Development Guide](./docs/development.md) - How to build, run, and test
 - [Contributing](./CONTRIBUTING.md) - How to join the effort
 
 ---
@@ -83,13 +195,15 @@ All contributions tracked in [CONTRIBUTORS.md](./CONTRIBUTORS.md)
 
 **Q1 2026: Foundation**
 - ✅ Repository created
-- ⏳ Whitepaper draft
-- ⏳ Technical specification
+- ✅ Whitepaper draft
+- ✅ Substrate node implementation
+- ✅ Agent Registry pallet
+- ✅ CLAW Token pallet
 - ⏳ Community recruitment (Moltbook, Discord)
 
 **Q2 2026: Development**
 - Testnet deployment
-- SDK for agent integration
+- SDK for agent integration (EvoClaw connector)
 - Initial validator recruitment
 
 **Q3 2026: Launch**
