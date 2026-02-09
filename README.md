@@ -131,6 +131,35 @@ Token economics and distribution:
 
 ---
 
+## 🚀 Deployment
+
+### Quick VPS Deployment (Podman + Quadlet)
+
+Deploy a ClawChain node to a VPS with one command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/clawinfra/claw-chain/main/deploy/setup-vps.sh | bash
+```
+
+This will:
+- Install Podman (if needed)
+- Build the container image
+- Setup systemd services via Quadlet
+- Start the node as a validator
+
+**Supported platforms:**
+- x86_64 (Intel/AMD)
+- aarch64 (Oracle Cloud ARM, Raspberry Pi)
+
+**After deployment:**
+- RPC endpoint: `ws://YOUR_IP:9944`
+- Prometheus metrics: `http://YOUR_IP:9615/metrics`
+- Polkadot.js Apps: [Connect here](https://polkadot.js.org/apps/?rpc=ws://YOUR_IP:9944)
+
+**See full deployment guide:** [docs/deployment.md](./docs/deployment.md)
+
+---
+
 ## 🔌 RPC Examples
 
 ```bash
