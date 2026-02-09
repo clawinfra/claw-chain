@@ -4,6 +4,8 @@ members = [
     "runtime",
     "pallets/agent-registry",
     "pallets/claw-token",
+    "pallets/reputation",
+    "pallets/task-market",
 ]
 resolver = "2"
 
@@ -31,11 +33,13 @@ sp-keyring = { version = "45.0" }
 sp-offchain = { version = "40.0", default-features = false }
 sp-runtime = { version = "45.0", default-features = false }
 sp-session = { version = "42.0", default-features = false }
+sp-staking = { version = "42.1", default-features = false }
 sp-storage = { version = "22.0", default-features = false }
 sp-transaction-pool = { version = "40.0", default-features = false }
 sp-version = { version = "43.0", default-features = false }
 sp-weights = { version = "33.2", default-features = false }
 sp-tracing = { version = "19.0", default-features = false }
+sp-npos-elections = { version = "40.0", default-features = false }
 
 # Substrate client
 sc-basic-authorship = { version = "0.53" }
@@ -65,12 +69,22 @@ frame-try-runtime = { version = "0.51", default-features = false }
 
 # Substrate pallets
 pallet-aura = { version = "44.0", default-features = false }
+pallet-authorship = { version = "45.0", default-features = false }
+pallet-bags-list = { version = "44.0", default-features = false }
 pallet-balances = { version = "46.0", default-features = false }
+pallet-election-provider-multi-phase = { version = "44.0", default-features = false }
 pallet-grandpa = { version = "45.0", default-features = false }
+pallet-offences = { version = "44.0", default-features = false }
+pallet-session = { version = "45.1", default-features = false }
+pallet-staking = { version = "45.0", default-features = false }
+pallet-staking-reward-curve = { version = "11.0" }
+pallet-sudo = { version = "45.0", default-features = false }
 pallet-timestamp = { version = "44.0", default-features = false }
 pallet-transaction-payment = { version = "45.0", default-features = false }
 pallet-transaction-payment-rpc = { version = "48.0" }
 pallet-transaction-payment-rpc-runtime-api = { version = "45.0", default-features = false }
+pallet-treasury = { version = "44.0", default-features = false }
+frame-election-provider-support = { version = "45.0", default-features = false }
 
 # Other Substrate
 substrate-build-script-utils = { version = "11.0" }
@@ -80,6 +94,8 @@ substrate-wasm-builder = { version = "31.1" }
 # ClawChain pallets
 pallet-agent-registry = { path = "pallets/agent-registry", default-features = false }
 pallet-claw-token = { path = "pallets/claw-token", default-features = false }
+pallet-reputation = { path = "pallets/reputation", default-features = false }
+pallet-task-market = { path = "pallets/task-market", default-features = false }
 
 # Serde
 serde = { version = "1.0", features = ["derive"] }

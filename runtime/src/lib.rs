@@ -19,28 +19,33 @@ use frame_support::{
     derive_impl,
     genesis_builder_helper::{build_state, get_preset},
     parameter_types,
-    traits::{ConstBool, ConstU128, ConstU32, ConstU64, ConstU8},
+    traits::{ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, tokens::PayFromAccount},
     weights::{
         constants::{
             BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND,
         },
         IdentityFee, Weight,
     },
+    PalletId,
+};
+use frame_election_provider_support::{
+    bounds::ElectionBoundsBuilder, onchain, SequentialPhragmen, VoteWeight,
 };
 use frame_system::limits::{BlockLength, BlockWeights};
 use pallet_grandpa::{
     fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
-use pallet_transaction_payment::{FungibleAdapter, Multiplier};
+use pallet_transaction_payment::FungibleAdapter;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
-    create_runtime_str, generic, impl_opaque_keys,
-    traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, Verify},
+    create_runtime_str, curve::PiecewiseLinear, generic, impl_opaque_keys,
+    traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, OpaqueKeys, Verify, AccountIdConversion},
     transaction_validity::{TransactionSource, TransactionValidity},
-    ApplyExtrinsicResult, MultiSignature,
+    ApplyExtrinsicResult, MultiSignature, Permill,
 };
+use sp_staking::SessionIndex;
 use sp_version::RuntimeVersion;
 
 #[cfg(feature = "std")]
@@ -113,6 +118,19 @@ pub const DAYS: BlockNumber = HOURS * 24;
 
 /// The existential deposit. Set to 1/10th of a CLAW.
 pub const EXISTENTIAL_DEPOSIT: u128 = 100_000_000_000; // 0.1 CLAW
+
+/// CLAW token unit (1 CLAW = 1e12 base units)
+pub const UNITS: Balance = 1_000_000_000_000;
+
+// Staking constants
+/// Session length: 100 blocks = 10 minutes at 6s block time
+pub const SESSION_LENGTH: BlockNumber = 100;
+/// Era length: 6 sessions = 1 hour (for testnet)
+pub const SESSIONS_PER_ERA: SessionIndex = 6;
+/// Minimum validator bond: 10,000 CLAW
+pub const MIN_VALIDATOR_BOND: Balance = 10_000 * UNITS;
+/// Minimum nominator bond: 100 CLAW
+pub const MIN_NOMINATOR_BOND: Balance = 100 * UNITS;
 
 /// We assume that ~10% of the block weight is consumed by `on_initialize` handlers.
 /// This is used to limit the maximal weight of a single extrinsic.
@@ -234,6 +252,203 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightInfo = pallet_transaction_payment::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_authorship::Config for Runtime {
+    type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
+    type EventHandler = (Staking, ());
+}
+
+parameter_types! {
+    pub const Period: u32 = SESSION_LENGTH;
+    pub const Offset: u32 = 0;
+}
+
+pub struct ValidatorIdOf;
+impl sp_runtime::traits::Convert<AccountId, Option<AccountId>> for ValidatorIdOf {
+    fn convert(a: AccountId) -> Option<AccountId> {
+        Some(a)
+    }
+}
+
+impl pallet_session::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type ValidatorId = AccountId;
+    type ValidatorIdOf = ValidatorIdOf;
+    type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
+    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+    type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, Staking>;
+    type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+    type Keys = opaque::SessionKeys;
+    type WeightInfo = ();
+    type Currency = Balances;
+    type KeyDeposit = ConstU128<{ 1 * UNITS }>;
+    type DisablingStrategy = ();
+}
+
+impl pallet_session::historical::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type FullIdentification = pallet_staking::Exposure<AccountId, Balance>;
+    type FullIdentificationOf = pallet_staking::DefaultExposureOf<Runtime>;
+}
+
+pallet_staking_reward_curve::build! {
+    const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
+        min_inflation: 0_025_000,
+        max_inflation: 0_100_000,
+        ideal_stake: 0_500_000,
+        falloff: 0_050_000,
+        max_piece_count: 40,
+        test_precision: 0_005_000,
+    );
+}
+
+parameter_types! {
+    pub const SessionsPerEra: SessionIndex = SESSIONS_PER_ERA;
+    pub const BondingDuration: sp_staking::EraIndex = 7; // 7 eras = 7 hours on testnet
+    pub const SlashDeferDuration: sp_staking::EraIndex = 2; // 2 eras
+    pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
+    pub const MaxExposurePageSize: u32 = 64;
+    pub const MaxControllersInDeprecationBatch: u32 = 100;
+}
+
+pub struct OnChainSeqPhragmen;
+impl onchain::Config for OnChainSeqPhragmen {
+    type System = Runtime;
+    type Solver = SequentialPhragmen<AccountId, sp_runtime::Perbill>;
+    type DataProvider = Staking;
+    type WeightInfo = ();
+    type Bounds = ElectionBounds;
+    type Sort = ();
+    type MaxBackersPerWinner = ConstU32<50>;
+    type MaxWinnersPerPage = ConstU32<100>;
+}
+
+parameter_types! {
+    pub ElectionBounds: frame_election_provider_support::bounds::ElectionBounds =
+        ElectionBoundsBuilder::default()
+            .voters_count(10_000.into())
+            .targets_count(1_000.into())
+            .build();
+}
+
+pub struct StakingBenchmarkingConfig;
+impl pallet_staking::BenchmarkingConfig for StakingBenchmarkingConfig {
+    type MaxValidators = ConstU32<100>;
+    type MaxNominators = ConstU32<1000>;
+}
+
+impl pallet_staking::Config for Runtime {
+    type Currency = Balances;
+    type CurrencyBalance = Balance;
+    type UnixTime = Timestamp;
+    type CurrencyToVote = sp_staking::currency_to_vote::U128CurrencyToVote;
+    type RewardRemainder = ();
+    type RuntimeEvent = RuntimeEvent;
+    type Slash = ();
+    type Reward = ();
+    type SessionsPerEra = SessionsPerEra;
+    type BondingDuration = BondingDuration;
+    type SlashDeferDuration = SlashDeferDuration;
+    type AdminOrigin = frame_system::EnsureRoot<AccountId>;
+    type SessionInterface = Self;
+    type EraPayout = pallet_staking::ConvertCurve<RewardCurve>;
+    type NextNewSession = Session;
+    type HistoryDepth = ConstU32<84>;
+    type MaxExposurePageSize = MaxExposurePageSize;
+    type ElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
+    type GenesisElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
+    type VoterList = BagsList;
+    type TargetList = pallet_staking::UseValidatorsMap<Runtime>;
+    type MaxUnlockingChunks = ConstU32<32>;
+    type EventListeners = ();
+    type WeightInfo = ();
+    type BenchmarkingConfig = StakingBenchmarkingConfig;
+    type NominationsQuota = pallet_staking::FixedNominationsQuota<16>;
+    type MaxControllersInDeprecationBatch = MaxControllersInDeprecationBatch;
+    type OldCurrency = Balances;
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type MaxValidatorSet = ConstU32<100>;
+    type Filter = ();
+}
+
+parameter_types! {
+    pub const BagThresholds: &'static [u64] = &[
+        100_000_000_000_000,
+        200_000_000_000_000,
+        500_000_000_000_000,
+        1_000_000_000_000_000,
+        2_000_000_000_000_000,
+        5_000_000_000_000_000,
+        10_000_000_000_000_000,
+    ];
+}
+
+impl pallet_bags_list::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type ScoreProvider = Staking;
+    type WeightInfo = ();
+    type BagThresholds = BagThresholds;
+    type Score = VoteWeight;
+    type MaxAutoRebagPerBlock = ConstU32<100>;
+}
+
+impl pallet_offences::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type IdentificationTuple = pallet_session::historical::IdentificationTuple<Self>;
+    type OnOffenceHandler = Staking;
+}
+
+parameter_types! {
+    pub const ProposalBond: Permill = Permill::from_percent(5);
+    pub const ProposalBondMinimum: Balance = 100 * UNITS;
+    pub const ProposalBondMaximum: Balance = 500 * UNITS;
+    pub const SpendPeriod: BlockNumber = 6 * DAYS;
+    pub const Burn: Permill = Permill::from_percent(1);
+    pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
+    pub const MaxApprovals: u32 = 100;
+    pub TreasuryAccount: AccountId = TreasuryPalletId::get().into_account_truncating();
+}
+
+pub struct TreasuryAccountGetter;
+impl frame_support::traits::Get<AccountId> for TreasuryAccountGetter {
+    fn get() -> AccountId {
+        TreasuryPalletId::get().into_account_truncating()
+    }
+}
+
+impl frame_support::traits::TypedGet for TreasuryAccountGetter {
+    type Type = AccountId;
+    fn get() -> Self::Type {
+        TreasuryPalletId::get().into_account_truncating()
+    }
+}
+
+impl pallet_treasury::Config for Runtime {
+    type PalletId = TreasuryPalletId;
+    type Currency = Balances;
+    type RuntimeEvent = RuntimeEvent;
+    type SpendPeriod = SpendPeriod;
+    type Burn = Burn;
+    type BurnDestination = ();
+    type SpendFunds = ();
+    type MaxApprovals = MaxApprovals;
+    type WeightInfo = ();
+    type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>;
+    type AssetKind = ();
+    type Beneficiary = AccountId;
+    type BeneficiaryLookup = sp_runtime::traits::IdentityLookup<AccountId>;
+    type Paymaster = PayFromAccount<Balances, TreasuryAccountGetter>;
+    type BalanceConverter = frame_support::traits::tokens::UnityAssetBalanceConversion;
+    type PayoutPeriod = ConstU32<0>;
+    type BlockNumberProvider = System;
+    type RejectOrigin = frame_system::EnsureRoot<AccountId>;
+}
+
+impl pallet_sudo::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type WeightInfo = ();
+}
+
 /// Configure the agent registry pallet.
 impl pallet_agent_registry::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -252,6 +467,47 @@ impl pallet_claw_token::Config for Runtime {
     type MaxContributionScore = ConstU64<{ u64::MAX }>;
 }
 
+parameter_types! {
+    // Reputation parameters
+    pub const MaxCommentLength: u32 = 256;
+    pub const InitialReputation: u32 = 5000;
+    pub const MaxReputationDelta: u32 = 500;
+    pub const MaxHistoryLength: u32 = 100;
+    
+    // Task Market parameters
+    pub const TaskMarketPalletId: PalletId = PalletId(*b"taskmark");
+    pub const MaxTitleLength: u32 = 128;
+    pub const MaxDescriptionLength: u32 = 1024;
+    pub const MaxProposalLength: u32 = 512;
+    pub const MaxBidsPerTask: u32 = 20;
+    pub const MinTaskReward: Balance = 100 * UNITS; // 100 CLAW minimum
+    pub const MaxActiveTasksPerAccount: u32 = 50;
+}
+
+impl pallet_reputation::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+    type Currency = Balances;
+    type MaxCommentLength = MaxCommentLength;
+    type InitialReputation = InitialReputation;
+    type MaxReputationDelta = MaxReputationDelta;
+    type MaxHistoryLength = MaxHistoryLength;
+}
+
+impl pallet_task_market::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+    type Currency = Balances;
+    type ReputationManager = Reputation;
+    type PalletId = TaskMarketPalletId;
+    type MaxTitleLength = MaxTitleLength;
+    type MaxDescriptionLength = MaxDescriptionLength;
+    type MaxProposalLength = MaxProposalLength;
+    type MaxBidsPerTask = MaxBidsPerTask;
+    type MinTaskReward = MinTaskReward;
+    type MaxActiveTasksPerAccount = MaxActiveTasksPerAccount;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 frame_support::construct_runtime!(
     pub enum Runtime {
@@ -261,10 +517,22 @@ frame_support::construct_runtime!(
         Grandpa: pallet_grandpa,
         Balances: pallet_balances,
         TransactionPayment: pallet_transaction_payment,
+        
+        // Staking & Governance
+        Authorship: pallet_authorship,
+        Session: pallet_session,
+        Historical: pallet_session::historical,
+        Staking: pallet_staking,
+        Offences: pallet_offences,
+        BagsList: pallet_bags_list,
+        Treasury: pallet_treasury,
+        Sudo: pallet_sudo,
 
         // ClawChain custom pallets
         AgentRegistry: pallet_agent_registry,
         ClawToken: pallet_claw_token,
+        Reputation: pallet_reputation,
+        TaskMarket: pallet_task_market,
     }
 );
 
