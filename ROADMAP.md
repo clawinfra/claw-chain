@@ -1,7 +1,7 @@
 # ClawChain Roadmap
 
-**Last Updated:** February 3, 2026  
-**Status:** Active Development (Q1 2026)
+**Last Updated:** February 14, 2026  
+**Status:** Testnet Live 🚀
 
 ---
 
@@ -13,64 +13,77 @@ Build the first Layer 1 blockchain designed specifically for autonomous agent ec
 
 ## 📅 Timeline
 
-### Q1 2026: Foundation (Current Phase)
+### Q1 2026: Foundation & Testnet ✅
 
-**Status:** ✅ In Progress
+**Status:** ✅ COMPLETE — Ahead of Schedule!
 
-**Goals:**
+**Completed:**
 - [x] Whitepaper published
 - [x] GitHub organization created
 - [x] Documentation complete (35KB+)
 - [x] CLA implemented
 - [x] GitHub Actions setup
 - [x] Community recruitment launched
-- [ ] Architecture decisions finalized
-- [ ] Core contributor team (10+ agents)
-- [ ] Technical discussions resolved
+- [x] Branding/logo suite finalized
+- [x] **Substrate runtime implementation**
+- [x] **8 pallets deployed:**
+  - Agent Identity (DID system)
+  - Reputation Tracking
+  - Service Marketplace
+  - Weighted Governance
+  - Token Economics
+  - Staking/Rewards
+  - Cross-chain Messaging
+  - Emergency Governance
+- [x] **Testnet Alpha LIVE** 🎉
+  - URL: https://testnet.clawchain.win
+  - VPS: Hetzner (135.181.157.121)
+  - NPoS consensus operational
+  - Block production working (Aura)
+  - Finality gadget operational (GRANDPA)
 
-**Key Decisions Needed:**
-- Consensus mechanism (PoS vs Hybrid)
-- Gas model (zero vs minimal)
-- Agent identity frameworks
-- Governance weights
-- Cross-chain strategy
-
-**Deliverables:**
-- Finalized technical specification
-- Architecture decision records (ADRs)
-- Core team assembled
-- Community engagement metrics
+**Architecture Decisions (In Progress):**
+- [Issue #23] Agent-Native Validators
+- [Issue #22] Sub-Second Finality
+- [Issue #21] ERC-8004 Compatibility
+- [Issue #20] X402 Protocol Integration
+- [Issue #14] Zero-Gas vs Minimal Fees
 
 ---
 
-### Q2 2026: Development & Testnet
+### Q2 2026: Testnet Hardening & Agent Integration
 
-**Status:** ⏳ Upcoming
+**Status:** 🔄 In Progress
 
 **Goals:**
-- [ ] Substrate runtime implementation
-- [ ] Agent identity pallet (DID system)
-- [ ] Reputation tracking pallet
-- [ ] Service marketplace pallet
-- [ ] Weighted governance pallet
-- [ ] Testnet Alpha launch
-- [ ] Validator node setup documentation
+- [x] Testnet operational
+- [x] **Auto-Discovery System designed** (EvoClaw integration)
+  - 6-hour cron health check
+  - Automatic DID registration when mainnet launches
+  - Config auto-update after registration
+  - Owner notification via Telegram
+  - Idempotent, configurable
+  - Docs: `evoclaw/docs/CLAWCHAIN-AUTO-DISCOVERY.md`
+- [ ] Auto-Discovery implementation
 - [ ] Agent SDK (JavaScript/TypeScript)
 - [ ] Faucet for test tokens
 - [ ] 50+ testnet validators recruited
+- [ ] Validator node setup documentation
+- [ ] EvoClaw native integration
+- [ ] First agent-to-agent transactions
 
 **Technical Milestones:**
-- Block production working (Aura)
-- Finality gadget operational (GRANDPA)
-- Agent DID registration live
-- Test transactions flowing
-- Validator rewards distributing
+- [x] Block production working (Aura)
+- [x] Finality gadget operational (GRANDPA)
+- [ ] Agent DID registration live
+- [ ] Test transactions flowing
+- [ ] Validator rewards distributing
 
 **Community Milestones:**
-- 50+ active contributors
-- 100+ GitHub stars
-- 10+ testnet validators
-- First agent-to-agent transactions
+- [ ] 50+ active contributors
+- [ ] 100+ GitHub stars
+- [ ] 10+ testnet validators
+- [ ] First agent-to-agent transactions
 
 ---
 
@@ -187,11 +200,11 @@ Build the first Layer 1 blockchain designed specifically for autonomous agent ec
 
 ## 🎨 Design Milestones
 
-### Branding (Q1 2026)
-- [ ] Logo finalized (bounty deadline: Feb 15)
-- [ ] Color palette defined
-- [ ] Typography standards
-- [ ] Brand guidelines published
+### Branding (Q1 2026) ✅
+- [x] Logo finalized
+- [x] Color palette defined
+- [x] Typography standards
+- [x] Brand guidelines published
 - [ ] Website design mockups
 
 ### User Experience (Q2 2026)
@@ -273,6 +286,7 @@ Build the first Layer 1 blockchain designed specifically for autonomous agent ec
 
 ## 📣 Stay Updated
 
+- **Testnet:** https://testnet.clawchain.win
 - **GitHub Discussions:** https://github.com/clawinfra/claw-chain/discussions
 - **Issues:** https://github.com/clawinfra/claw-chain/issues
 - **Moltbook:** Tag @unoclawd
@@ -287,4 +301,3 @@ Build the first Layer 1 blockchain designed specifically for autonomous agent ec
 ---
 
 **Questions about the roadmap?** Open an issue with `[Roadmap Question]` tag.
-
