@@ -7,6 +7,7 @@ members = [
     "pallets/reputation",
     "pallets/task-market",
     "pallets/gas-quota",
+    "pallets/rpc-registry",
 ]
 resolver = "2"
 
@@ -97,6 +98,7 @@ pallet-agent-registry = { path = "pallets/agent-registry", default-features = fa
 pallet-claw-token = { path = "pallets/claw-token", default-features = false }
 pallet-reputation = { path = "pallets/reputation", default-features = false }
 pallet-task-market = { path = "pallets/task-market", default-features = false }
+pallet-rpc-registry = { path = "pallets/rpc-registry", default-features = false }
 pallet-gas-quota = { path = "pallets/gas-quota", default-features = false }
 
 # Serde

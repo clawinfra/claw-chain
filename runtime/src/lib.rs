@@ -508,6 +508,17 @@ impl pallet_task_market::Config for Runtime {
     type MaxActiveTasksPerAccount = MaxActiveTasksPerAccount;
 }
 
+
+/// Configure the RPC registry pallet.
+impl pallet_rpc_registry::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+    type MaxUrlLength = ConstU32<256>;
+    type MaxRegionLength = ConstU32<32>;
+    type MaxNodesPerOwner = ConstU32<10>;
+    type MaxActiveNodes = ConstU32<1000>;
+    type MaxHeartbeatInterval = ConstU32<300>; // 300 blocks = ~30 min at 6s/block
+}
 // Create the runtime by composing the FRAME pallets that were previously configured.
 frame_support::construct_runtime!(
     pub enum Runtime {
@@ -533,6 +544,7 @@ frame_support::construct_runtime!(
         ClawToken: pallet_claw_token,
         Reputation: pallet_reputation,
         TaskMarket: pallet_task_market,
+        RpcRegistry: pallet_rpc_registry,
     }
 );
 

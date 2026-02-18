@@ -66,6 +66,7 @@ pallet-agent-registry = { workspace = true }
 pallet-claw-token = { workspace = true }
 pallet-reputation = { workspace = true }
 pallet-task-market = { workspace = true }
+pallet-rpc-registry = { workspace = true }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true, optional = true }
@@ -119,6 +120,7 @@ std = [
     "pallet-claw-token/std",
     "pallet-reputation/std",
     "pallet-task-market/std",
+    "pallet-rpc-registry/std",
     "substrate-wasm-builder",
 ]
 runtime-benchmarks = [
@@ -136,6 +138,7 @@ runtime-benchmarks = [
     "pallet-treasury/runtime-benchmarks",
     "pallet-reputation/runtime-benchmarks",
     "pallet-task-market/runtime-benchmarks",
+    "pallet-rpc-registry/runtime-benchmarks",
     "sp-runtime/runtime-benchmarks",
 ]
 try-runtime = [
@@ -161,4 +164,5 @@ try-runtime = [
     "pallet-claw-token/try-runtime",
     "pallet-reputation/try-runtime",
     "pallet-task-market/try-runtime",
+    "pallet-rpc-registry/try-runtime",
 ]
