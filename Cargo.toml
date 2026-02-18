@@ -7,6 +7,8 @@ members = [
     "pallets/claw-token",
     "pallets/reputation",
     "pallets/task-market",
+    "pallets/gas-quota",
+    "pallets/rpc-registry",
 ]
 resolver = "2"
 

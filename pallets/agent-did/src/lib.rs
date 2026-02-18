@@ -6,7 +6,7 @@
 //!
 //! This pallet implements the `did:claw` DID method for agent identity:
 //! - DID format: `did:claw:{AccountId}`
-//! - Storage: DID documents, service endpoints, verification methods
+//! - Storage: DID documents, service endpoints
 //! - Lifecycle: register → update → deactivate
 //!
 //! ## Interface
@@ -14,7 +14,7 @@
 //! ### Dispatchable Functions
 //!
 //! - `register_did` — Create a new DID document for the caller
-//! - `update_did` — Update the DID document controller or metadata
+//! - `update_did` — Update the DID document metadata
 //! - `deactivate_did` — Permanently deactivate a DID document
 //! - `add_service_endpoint` — Add a service endpoint to a DID document
 //! - `remove_service_endpoint` — Remove a service endpoint
@@ -66,7 +66,7 @@ pub mod pallet {
     pub struct DidDocument<T: Config> {
         /// The account that controls this DID document.
         pub controller: T::AccountId,
-        /// Optional JSON-LD context or metadata (e.g. linked service roots).
+        /// Optional JSON-LD context or metadata.
         pub metadata: BoundedVec<u8, T::MaxMetadataLength>,
         /// DID document status.
         pub status: DidStatus,
@@ -78,9 +78,7 @@ pub mod pallet {
         pub next_service_id: ServiceEndpointId,
     }
 
-    // Manual impl required: DecodeWithMemTracking is a marker trait for types
-    // that implement Decode. The derive macro does not handle generic structs
-    // with Config bounds reliably across all codec versions.
+    // Manual impl: DecodeWithMemTracking is a marker trait (no derive for generic structs).
     impl<T: Config> codec::DecodeWithMemTracking for DidDocument<T> {}
 
     /// A service endpoint attached to a DID document.
@@ -100,9 +98,6 @@ pub mod pallet {
     /// The pallet's configuration trait.
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        /// The overarching runtime event type.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
 
@@ -130,7 +125,7 @@ pub mod pallet {
 
     /// DID documents, keyed by the account that owns them.
     ///
-    /// `did:claw:{AccountId}` ↔ DidDocument
+    /// `did:claw:{AccountId}` <-> DidDocument
     #[pallet::storage]
     #[pallet::getter(fn did_documents)]
     pub type DidDocuments<T: Config> =
@@ -138,7 +133,7 @@ pub mod pallet {
 
     /// Service endpoints attached to a DID document.
     ///
-    /// (AccountId, ServiceEndpointId) → ServiceEndpoint
+    /// (AccountId, ServiceEndpointId) -> ServiceEndpoint
     #[pallet::storage]
     #[pallet::getter(fn service_endpoints)]
     pub type ServiceEndpoints<T: Config> = StorageDoubleMap<
@@ -261,7 +256,7 @@ pub mod pallet {
 
                 doc.metadata = bounded;
                 doc.updated_at = frame_system::Pallet::<T>::block_number();
-                Ok(())
+                Ok::<(), DispatchError>(())
             })?;
 
             Self::deposit_event(Event::DidUpdated { who });
@@ -269,9 +264,6 @@ pub mod pallet {
         }
 
         /// Permanently deactivate the caller's DID document.
-        ///
-        /// A deactivated DID cannot be re-activated or modified. Service
-        /// endpoints may still be queried for audit purposes.
         #[pallet::call_index(2)]
         #[pallet::weight(T::DbWeight::get().reads_writes(1, 1))]
         pub fn deactivate_did(origin: OriginFor<T>) -> DispatchResult {
@@ -283,7 +275,7 @@ pub mod pallet {
 
                 doc.status = DidStatus::Deactivated;
                 doc.updated_at = frame_system::Pallet::<T>::block_number();
-                Ok(())
+                Ok::<(), DispatchError>(())
             })?;
 
             Self::deposit_event(Event::DidDeactivated { who });
@@ -291,8 +283,6 @@ pub mod pallet {
         }
 
         /// Add a service endpoint to the caller's DID document.
-        ///
-        /// Returns the new endpoint's `ServiceEndpointId`.
         #[pallet::call_index(3)]
         #[pallet::weight(T::DbWeight::get().reads_writes(2, 3))]
         pub fn add_service_endpoint(
@@ -349,11 +339,9 @@ pub mod pallet {
         ) -> DispatchResult {
             let who = ensure_signed(origin)?;
 
-            // Verify DID exists and is active.
             let doc = DidDocuments::<T>::get(&who).ok_or(Error::<T>::DidNotFound)?;
             ensure!(doc.status == DidStatus::Active, Error::<T>::DidDeactivated);
 
-            // Verify endpoint exists.
             ensure!(
                 ServiceEndpoints::<T>::contains_key(&who, endpoint_id),
                 Error::<T>::ServiceEndpointNotFound
