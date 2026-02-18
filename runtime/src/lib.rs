@@ -520,6 +520,34 @@ impl pallet_rpc_registry::Config for Runtime {
     type MaxHeartbeatInterval = ConstU32<300>; // 300 blocks = ~30 min at 6s/block
 }
 // Create the runtime by composing the FRAME pallets that were previously configured.
+parameter_types! {
+    pub const GasQuotaBlocksPerDay: u32 = 14_400; // 6s blocks × 14400 = 24h
+    pub const GasQuotaStakePerFreeTx: u128 = 1_000_000_000_000; // 1 CLAW
+    pub const GasQuotaUnlimitedThreshold: u128 = 10_000_000_000_000_000; // 10,000 CLAW
+    pub const GasQuotaBaseFee: u128 = 1_000_000_000; // 0.001 CLAW
+    pub const GasQuotaFeeDiscount: sp_runtime::Perbill = sp_runtime::Perbill::from_percent(90);
+    pub const GasQuotaMinFree: u32 = 10;
+}
+
+impl pallet_gas_quota::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type BlocksPerDay = GasQuotaBlocksPerDay;
+    type MinFreeQuota = GasQuotaMinFree;
+    type StakePerFreeTx = GasQuotaStakePerFreeTx;
+    type UnlimitedStakeThreshold = GasQuotaUnlimitedThreshold;
+    type BaseFeePerTx = GasQuotaBaseFee;
+    type FeeDiscountPerKStake = GasQuotaFeeDiscount;
+}
+/// Configure the Agent DID pallet (W3C DID method: did:claw:{AccountId}).
+impl pallet_agent_did::Config for Runtime {
+    type WeightInfo = ();
+    type MaxServiceEndpoints = frame_support::traits::ConstU32<10>;
+    type MaxServiceTypeLength = frame_support::traits::ConstU32<64>;
+    type MaxServiceUrlLength = frame_support::traits::ConstU32<256>;
+    type MaxMetadataLength = frame_support::traits::ConstU32<1024>;
+}
+
 frame_support::construct_runtime!(
     pub enum Runtime {
         System: frame_system,
@@ -545,6 +573,8 @@ frame_support::construct_runtime!(
         Reputation: pallet_reputation,
         TaskMarket: pallet_task_market,
         RpcRegistry: pallet_rpc_registry,
+        GasQuota: pallet_gas_quota,
+        AgentDid: pallet_agent_did,
     }
 );
 
