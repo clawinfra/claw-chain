@@ -1218,6 +1218,7 @@ dependencies = [
  "pallet-gas-quota",
  "pallet-grandpa",
  "pallet-offences",
+ "pallet-quadratic-governance",
  "pallet-reputation",
  "pallet-rpc-registry",
  "pallet-session",
@@ -5510,6 +5511,23 @@ dependencies = [
  "serde",
  "sp-runtime",
  "sp-staking",
+]
+
+[[package]]
+name = "pallet-quadratic-governance"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-agent-did",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
 ]
 
 [[package]]

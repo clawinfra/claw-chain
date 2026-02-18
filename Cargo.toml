@@ -7,6 +7,7 @@ members = [
     "pallets/claw-token",
     "pallets/reputation",
     "pallets/task-market",
+    "pallets/quadratic-governance",
 ]
 resolver = "2"
 
@@ -100,6 +101,7 @@ pallet-reputation = { path = "pallets/reputation", default-features = false }
 pallet-task-market = { path = "pallets/task-market", default-features = false }
 pallet-gas-quota = { path = "pallets/gas-quota", default-features = false }
 pallet-rpc-registry = { path = "pallets/rpc-registry", default-features = false }
+pallet-quadratic-governance = { path = "pallets/quadratic-governance", default-features = false }
 
 # Serde
 serde = { version = "1.0", features = ["derive"] }

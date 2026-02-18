@@ -540,6 +540,22 @@ impl pallet_gas_quota::Config for Runtime {
     type FeeDiscountPerKStake = GasQuotaFeeDiscount;
 }
 /// Configure the Agent DID pallet (W3C DID method: did:claw:{AccountId}).
+parameter_types! {
+    pub const GovMinProposalDeposit: Balance = 100 * UNITS;      // 100 CLAW
+    pub const GovVotingPeriod: BlockNumber = 50_400;             // ~7 days at 6s/block
+    pub const GovMinQuorumPct: u32 = 10;                         // require >= 10 total vote-weight
+}
+
+/// Configure the Quadratic Governance pallet (ADR-004).
+impl pallet_quadratic_governance::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type MinProposalDeposit = GovMinProposalDeposit;
+    type VotingPeriod = GovVotingPeriod;
+    type MinQuorumPct = GovMinQuorumPct;
+    type WeightInfo = ();
+}
+
 impl pallet_agent_did::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
@@ -584,6 +600,7 @@ frame_support::construct_runtime!(
         RpcRegistry: pallet_rpc_registry,
         GasQuota: pallet_gas_quota,
         AgentDid: pallet_agent_did,
+        QuadraticGovernance: pallet_quadratic_governance,
     }
 );
 

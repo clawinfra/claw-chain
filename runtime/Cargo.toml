@@ -69,6 +69,7 @@ pallet-task-market = { workspace = true }
 pallet-gas-quota = { workspace = true }
 pallet-agent-did = { workspace = true }
 pallet-rpc-registry = { workspace = true }
+pallet-quadratic-governance = { workspace = true }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true, optional = true }
@@ -124,6 +125,7 @@ std = [
     "pallet-task-market/std",
     "pallet-rpc-registry/std",
     "pallet-agent-did/std",
+    "pallet-quadratic-governance/std",
     "substrate-wasm-builder",
 ]
 runtime-benchmarks = [
@@ -143,6 +145,7 @@ runtime-benchmarks = [
     "pallet-task-market/runtime-benchmarks",
     "pallet-rpc-registry/runtime-benchmarks",
     "pallet-agent-did/runtime-benchmarks",
+    "pallet-quadratic-governance/runtime-benchmarks",
     "sp-runtime/runtime-benchmarks",
 ]
 try-runtime = [
@@ -170,4 +173,5 @@ try-runtime = [
     "pallet-task-market/try-runtime",
     "pallet-rpc-registry/try-runtime",
     "pallet-agent-did/try-runtime",
+    "pallet-quadratic-governance/try-runtime",
 ]
