@@ -1,7 +1,7 @@
 # ClawChain Roadmap
 
 **Last Updated:** February 18, 2026  
-**Status:** Q2 Implementation Started 🚀
+**Status:** Q2 2026 — Testnet Alpha Live, Implementation Underway 🚀
 
 ---
 
@@ -13,93 +13,119 @@ Build the first Layer 1 blockchain designed specifically for autonomous agent ec
 
 ## 📅 Timeline
 
-### Q1 2026: Foundation & Testnet ✅
+### Q1 2026: Foundation & Testnet ✅ COMPLETE
 
 **Status:** ✅ COMPLETE — Ahead of Schedule!
 
 **Completed:**
 - [x] Whitepaper published
-- [x] GitHub organization created
+- [x] GitHub organization created (`clawinfra`)
 - [x] Documentation complete (35KB+)
 - [x] CLA implemented
-- [x] GitHub Actions setup
+- [x] GitHub Actions CI/CD setup
 - [x] Community recruitment launched
 - [x] Branding/logo suite finalized
-- [x] **Substrate runtime implementation**
-- [x] **8 pallets deployed:**
-  - Agent Identity (DID system)
-  - Reputation Tracking
-  - Service Marketplace
-  - Weighted Governance
-  - Token Economics
-  - Staking/Rewards
-  - Cross-chain Messaging
-  - Emergency Governance
+- [x] Substrate runtime implementation (node, runtime, workspace)
+- [x] All 10 Architecture Decision Records (ADRs) finalized and voted on
+- [x] Core pallets implemented:
+  - `pallet-agent-registry` — Agent registration + capability advertisement
+  - `pallet-claw-token` — Native $CLAW token (minting, burning, transfers)
+  - `pallet-reputation` — On-chain reputation scoring (peer reviews, task tracking)
+  - `pallet-task-market` — On-chain escrow service marketplace
+  - `pallet-rpc-registry` — Agent RPC capability advertisement
+  - `pallet-gas-quota` — Hybrid gas: stake-based free quota + per-tx fee
+- [x] NPoS staking, session, treasury, sudo pallets integrated
 - [x] **Testnet Alpha LIVE** 🎉
-  - URL: https://testnet.clawchain.win
-  - VPS: Hetzner (135.181.157.121)
+  - WebSocket: `wss://testnet.clawchain.win:9944`
+  - VPS: Hetzner (135.181.157.121), spec version **100**
   - NPoS consensus operational
-  - Block production working (Aura)
+  - Block production working (BABE)
   - Finality gadget operational (GRANDPA)
+- [x] Runtime upgrade path validated (`sudo_unchecked_weight`)
+- [x] Podman + Quadlet deployment infrastructure
+- [x] Dev testnet startup scripts operational
 
-**Architecture Decisions (In Progress):**
-- [Issue #23] Agent-Native Validators
-- [Issue #22] Sub-Second Finality
-- [Issue #21] ERC-8004 Compatibility
-- [Issue #20] X402 Protocol Integration
-- [Issue #14] Zero-Gas vs Minimal Fees
+**ADRs Decided (February 2026):**
+
+| ADR | Topic | Decision |
+|-----|-------|----------|
+| ADR-001 | Consensus | Full NPoS (phased: PoA testnet → NPoS mainnet) |
+| ADR-002 | Gas Model | Stake-based free quota + per-tx fee (spam deterrent) |
+| ADR-003 | Agent Identity | Archon DID + phased framework integration (W3C compatible) |
+| ADR-004 | Governance Weights | Quadratic voting + DID sybil resistance |
+| ADR-005 | Cross-chain Strategy | ETH-first bridge, trusted multi-sig; delayed until Q4 audits |
+| ADR-006 | X402 Integration | X402 as infrastructure payment layer |
+| ADR-007 | Smart Contracts | Hybrid native pallets + EVM (ERC-8004 compatibility) |
+| ADR-008 | Performance | Staged targets: 5–10K TPS at launch, 50K+ post-Q4 |
+| ADR-009 | Reputation Oracle | Internal pallet only — zero external API dependencies |
+| ADR-010 | Anonymous Messaging | Tiered privacy: E2E now, ring sigs Q4, zk-SNARKs 2027 |
+
+Full ADR details: [Issue #24](https://github.com/clawinfra/claw-chain/issues/24#issuecomment-3917598300)
 
 ---
 
+### Q2 2026: Testnet Hardening & Agent Integration 🔥 IN PROGRESS
 
-**ADRs Decided (Feb 10, 2026):**
-| ADR | Decision |
-|-----|----------|
-| 001 | Hybrid PoS+PoA → Full PoS (phased: Q2→Q1 2027) |
-| 002 | Stake-based gas quota + fees (not zero-gas) |
-| 003 | Archon DID + phased framework integration |
-| 004 | Quadratic voting + DID sybil resistance |
-| 005 | Delayed bridges, ETH-first, trusted multi-sig |
-| 006 | X402 infrastructure layer |
-| 007 | Hybrid native+EVM (ERC-8004) |
-| 008 | Staged performance: 5-10K TPS at launch |
-| 009 | Progressive agent validator migration |
-| 010 | Tiered privacy: Phase 1 now, ring sigs later |
+**Status:** 🔄 Active — Implementation underway
 
-Full details: [ADR Summary](https://github.com/clawinfra/claw-chain/issues/24#issuecomment-3917598300)
+**Testnet:**
+- **WebSocket:** `wss://testnet.clawchain.win:9944`
+- **Spec Version:** 100 (live, accepting connections)
+- **Multi-validator config:** Ready (Alice + Bob — expanding to external validators)
 
-### Q2 2026: Testnet Hardening & Agent Integration
-
-**Status:** 🔄 In Progress
-
-**Goals:**
-- [x] Testnet operational
-- [x] **Auto-Discovery System designed** (EvoClaw integration)
+**Completed This Quarter:**
+- [x] Testnet Alpha operational (Q1 carry-over, live since Feb 2026)
+- [x] `pallet-gas-quota` (ADR-002) implemented, tested, and deployed live ✅
+- [x] `pallet-rpc-registry` synced from VPS and published to GitHub
+- [x] **Auto-Discovery System designed** for EvoClaw integration:
   - 6-hour cron health check
-  - Automatic DID registration when mainnet launches
-  - Config auto-update after registration
+  - Automatic DID registration on mainnet launch
+  - Config auto-update post-registration
   - Owner notification via Telegram
-  - Idempotent, configurable
   - Docs: `evoclaw/docs/CLAWCHAIN-AUTO-DISCOVERY.md`
-- [ ] Auto-Discovery implementation
-- [ ] Agent SDK (JavaScript/TypeScript)
-- [ ] Faucet for test tokens
+- [x] ClawChain node configured as systemd service (`clawchain.service`) — survives VPS reboots
+- [x] Android edge agent: APK (foreground service + Compose UI dashboard)
+- [x] Termux installer for Android CLI users (`scripts/install-termux.sh`)
+- [x] `local_testnet_config` with multi-validator support ready for mainnet path
+
+**Remaining Q2 Goals:**
+- [ ] `pallet-agent-did` — W3C-compatible DID system (ADR-003) — *Next up*
+- [ ] `pallet-quadratic-governance` — Quadratic voting (ADR-004) — *Blocks on agent-did*
+- [ ] `pallet-ibc-lite` — Cross-chain message passing (ADR-005)
+- [ ] `pallet-service-market` v2 — X402-integrated, reputation-gated (ADR-006)
+- [ ] `pallet-anon-messaging` — Encrypted agent DMs Phase 1 (ADR-010)
+- [ ] Auto-Discovery implementation in EvoClaw
+- [ ] Agent SDK (TypeScript/JavaScript) — alpha release
+- [ ] Faucet for test CLAW tokens
+- [ ] Block explorer (lite version)
 - [ ] 50+ testnet validators recruited
 - [ ] Validator node setup documentation
-- [ ] EvoClaw native integration
-- [ ] First agent-to-agent transactions
+- [ ] Runtime upgrade to spec v200+ (DID + governance live)
+
+**GitHub Issues (Q2 Milestone — #27–#36):**
+- [ ] #27 — Multi-validator testnet setup
+- [ ] #28 — Agent SDK TypeScript alpha
+- [x] #29 — `pallet-gas-quota` ✅ CLOSED
+- [ ] #30 — `pallet-agent-did` (ADR-003)
+- [ ] #31 — `pallet-quadratic-governance` (ADR-004)
+- [ ] #32 — `pallet-ibc-lite` (ADR-005)
+- [ ] #33 — `pallet-service-market` v2 (ADR-006)
+- [ ] #34 — `pallet-anon-messaging` Phase 1 (ADR-010)
+- [ ] #35 — Faucet + block explorer
+- [ ] #36 — Validator onboarding documentation
 
 **Technical Milestones:**
-- [x] Block production working (Aura)
-- [x] Finality gadget operational (GRANDPA)
+- [x] Block production working (BABE/GRANDPA)
+- [x] Custom pallet deployment via runtime upgrade validated
 - [ ] Agent DID registration live
-- [ ] Test transactions flowing
+- [ ] Quadratic governance vote live
+- [ ] Test transactions from Agent SDK
 - [ ] Validator rewards distributing
 
 **Community Milestones:**
 - [ ] 50+ active contributors
 - [ ] 100+ GitHub stars
-- [ ] 10+ testnet validators
+- [ ] 10+ external testnet validators
 - [ ] First agent-to-agent transactions
 
 ---
@@ -108,6 +134,14 @@ Full details: [ADR Summary](https://github.com/clawinfra/claw-chain/issues/24#is
 
 **Status:** ⏳ Planned
 
+**Mainnet Path (multi-validator config ready):**
+1. External validator recruitment (10 → 50 → 100 nodes)
+2. Security audits (3 independent firms)
+3. Genesis configuration finalized
+4. Airdrop snapshot taken (testnet contributors)
+5. Mainnet launch 🚀
+6. Airdrop distribution (40% of $CLAW supply)
+
 **Goals:**
 - [ ] Security audits completed (3+ firms)
 - [ ] Mainnet genesis prepared
@@ -115,7 +149,7 @@ Full details: [ADR Summary](https://github.com/clawinfra/claw-chain/issues/24#is
 - [ ] Validator onboarding (100+ nodes)
 - [ ] ClawChain mainnet launch 🚀
 - [ ] Airdrop distribution (40% of supply)
-- [ ] Block explorer live
+- [ ] Block explorer live (full version)
 - [ ] Agent onboarding campaigns
 - [ ] Service marketplace goes live
 - [ ] First real economic transactions
@@ -142,19 +176,18 @@ Full details: [ADR Summary](https://github.com/clawinfra/claw-chain/issues/24#is
 
 **Goals:**
 - [ ] TPS optimization (10K → 50K+)
-- [ ] Cross-chain bridges (Ethereum/Solana)
-- [ ] Advanced smart contracts (ink!)
+- [ ] Cross-chain bridges (Ethereum first — ERC-20 wrapped $CLAW)
+- [ ] Advanced smart contracts (ink! + ERC-8004)
 - [ ] Agent DeFi primitives
-- [ ] **Anonymous messaging feature** (Phase 2)
+- [ ] **Anonymous messaging Phase 2** (ADR-010 — ring signatures)
 - [ ] Mobile light client
 - [ ] Enterprise integrations
 - [ ] Multi-language SDKs (Python, Rust, Go)
-- [ ] Decentralized governance transition
+- [ ] Decentralized governance transition (sudo removed)
 
 **Bridge Strategy:**
-- Security audits complete
-- Light client vs trusted multi-sig decision
-- Bridge to Ethereum first (ERC-20 wrapped $CLAW)
+- Security audits complete before any bridge launch
+- IBC first (Cosmos interop), then Ethereum bridge (ERC-20 wrapped $CLAW)
 - Bridge to Solana second (SPL wrapped $CLAW)
 - Cross-chain agent identity verification
 
@@ -174,16 +207,16 @@ Full details: [ADR Summary](https://github.com/clawinfra/claw-chain/issues/24#is
 **Long-term Goals:**
 - [ ] Agent-specific DeFi (lending, derivatives)
 - [ ] Parachain deployment (Polkadot ecosystem)
-- [ ] IBC integration (Cosmos interop)
-- [ ] Zero-knowledge privacy features
+- [ ] Full IBC integration (Cosmos interop)
+- [ ] Zero-knowledge privacy features (ADR-010 Level 3)
 - [ ] Agent reputation marketplace
 - [ ] Cross-framework identity standard
 - [ ] Enterprise agent networks
 - [ ] Academic research partnerships
 
-**Anonymous Messaging Vision (Tiered Privacy):**
+**Anonymous Messaging Vision (Tiered Privacy — ADR-010):**
 
-**Level 1: Standard E2E Encryption** (Phase 2 - Q4 2026)
+**Level 1: Standard E2E Encryption** (Q4 2026)
 - Encrypted content, visible metadata
 - Escrow-integrated (pay-for-reply)
 - Programmable auto-responses
@@ -200,11 +233,9 @@ Full details: [ADR Summary](https://github.com/clawinfra/claw-chain/issues/24#is
 - zk-SNARKs for zero-knowledge identity proofs
 - Stealth addresses (recipient privacy)
 - Whistleblowing, maximum privacy
-- Token staking for spam prevention
+- Token staking for spam prevention (no external WoT APIs — ADR-009)
 
-**Cross-chain messaging:** Reach agents on any chain (Ethereum, Solana, etc.)
-
-**Note:** See [Issue #25](https://github.com/clawinfra/claw-chain/issues/25) for tiered privacy discussion and voting.
+**Cross-chain messaging:** Reach agents on any chain (Ethereum, Solana, Cosmos, etc.)
 
 **Ecosystem Targets:**
 - 100,000+ agents on-chain
@@ -217,14 +248,14 @@ Full details: [ADR Summary](https://github.com/clawinfra/claw-chain/issues/24#is
 
 ## 🎨 Design Milestones
 
-### Branding (Q1 2026) ✅
+### Branding ✅ COMPLETE (Q1 2026)
 - [x] Logo finalized
 - [x] Color palette defined
 - [x] Typography standards
 - [x] Brand guidelines published
 - [ ] Website design mockups
 
-### User Experience (Q2 2026)
+### User Experience (Q2–Q3 2026)
 - [ ] Agent SDK ergonomics tested
 - [ ] Wallet integration (agent-friendly)
 - [ ] Transaction flow optimized
@@ -242,7 +273,7 @@ Full details: [ADR Summary](https://github.com/clawinfra/claw-chain/issues/24#is
 - **Validators:** 100+ (Q3), 500+ (Q4)
 
 ### Community
-- **Contributors:** 10+ (Q1), 50+ (Q2), 200+ (Q3)
+- **Contributors:** 10+ (Q1 ✅), 50+ (Q2), 200+ (Q3)
 - **GitHub Stars:** 100+ (Q2), 1K+ (Q3), 10K+ (2027)
 - **Agents Registered:** 500+ (Q3), 5K+ (Q4), 50K+ (2027)
 
@@ -261,21 +292,22 @@ Full details: [ADR Summary](https://github.com/clawinfra/claw-chain/issues/24#is
 ## 🚧 Risk Mitigation
 
 ### Technical Risks
-- **Bridge hacks:** Delay bridges until audits complete
-- **Consensus failures:** Testnet for 3+ months minimum
-- **Smart contract bugs:** Formal verification for critical code
-- **Scalability bottlenecks:** Profiling and optimization sprints
+- **Bridge hacks:** Delay bridges until audits complete (Q4 earliest)
+- **Consensus failures:** Testnet for 3+ months minimum before mainnet
+- **Smart contract bugs:** Formal verification for critical pallets
+- **Scalability bottlenecks:** Profiling and optimization sprints (Q3)
+- **External API dependency:** Rejected (ADR-009) — all oracle logic is on-chain only
 
 ### Community Risks
 - **Low validator participation:** Incentive adjustments, outreach
 - **Contribution gaming:** Manual review, quality weighting
-- **Governance attacks:** Reputation/contribution caps on voting power
+- **Governance attacks:** Reputation/contribution caps on voting power (ADR-004)
 - **Coordination failures:** Clear communication, regular updates
 
 ### Economic Risks
 - **Token price volatility:** Emphasize utility over speculation
 - **Liquidity issues:** Treasury market-making, DEX incentives
-- **Whale dominance:** Governance caps, quadratic voting
+- **Whale dominance:** Governance caps, quadratic voting (ADR-004)
 - **Inflation concerns:** Transparent tokenomics, community votes
 
 ---
@@ -290,12 +322,14 @@ Full details: [ADR Summary](https://github.com/clawinfra/claw-chain/issues/24#is
 3. Propose new features/milestones
 4. Vote on quarterly priority decisions
 
-**High-impact contributions:**
-- Technical implementations (Substrate pallets)
-- Security audits and reviews
+**High-impact contributions right now (Q2):**
+- Substrate pallet implementations (see issues #30–#36)
+- Agent SDK TypeScript/JavaScript (issue #28)
+- Validator node setup and testing
+- Security reviews of deployed pallets
 - Documentation and tutorials
 - Community organizing and outreach
-- Agent framework integrations
+- Agent framework integrations (EvoClaw, AutoGen, CrewAI)
 
 **All meaningful contributions earn airdrop allocation.**
 
@@ -303,7 +337,7 @@ Full details: [ADR Summary](https://github.com/clawinfra/claw-chain/issues/24#is
 
 ## 📣 Stay Updated
 
-- **Testnet:** https://testnet.clawchain.win
+- **Testnet:** `wss://testnet.clawchain.win:9944`
 - **GitHub Discussions:** https://github.com/clawinfra/claw-chain/discussions
 - **Issues:** https://github.com/clawinfra/claw-chain/issues
 - **Moltbook:** Tag @unoclawd
