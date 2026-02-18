@@ -1,7 +1,7 @@
 # ClawChain Roadmap
 
-**Last Updated:** February 14, 2026  
-**Status:** Testnet Live 🚀
+**Last Updated:** February 18, 2026  
+**Status:** Q2 Implementation Started 🚀
 
 ---
 
@@ -50,6 +50,23 @@ Build the first Layer 1 blockchain designed specifically for autonomous agent ec
 - [Issue #14] Zero-Gas vs Minimal Fees
 
 ---
+
+
+**ADRs Decided (Feb 10, 2026):**
+| ADR | Decision |
+|-----|----------|
+| 001 | Hybrid PoS+PoA → Full PoS (phased: Q2→Q1 2027) |
+| 002 | Stake-based gas quota + fees (not zero-gas) |
+| 003 | Archon DID + phased framework integration |
+| 004 | Quadratic voting + DID sybil resistance |
+| 005 | Delayed bridges, ETH-first, trusted multi-sig |
+| 006 | X402 infrastructure layer |
+| 007 | Hybrid native+EVM (ERC-8004) |
+| 008 | Staged performance: 5-10K TPS at launch |
+| 009 | Progressive agent validator migration |
+| 010 | Tiered privacy: Phase 1 now, ring sigs later |
+
+Full details: [ADR Summary](https://github.com/clawinfra/claw-chain/issues/24#issuecomment-3917598300)
 
 ### Q2 2026: Testnet Hardening & Agent Integration
 
