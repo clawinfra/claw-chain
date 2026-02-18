@@ -542,10 +542,10 @@ impl pallet_gas_quota::Config for Runtime {
 /// Configure the Agent DID pallet (W3C DID method: did:claw:{AccountId}).
 impl pallet_agent_did::Config for Runtime {
     type WeightInfo = ();
-    type MaxServiceEndpoints = frame_support::traits::ConstU32<10>;
-    type MaxServiceTypeLength = frame_support::traits::ConstU32<64>;
-    type MaxServiceUrlLength = frame_support::traits::ConstU32<256>;
-    type MaxMetadataLength = frame_support::traits::ConstU32<1024>;
+    type MaxServiceEndpoints = ConstU32<10>;
+    type MaxServiceTypeLength = ConstU32<64>;
+    type MaxServiceUrlLength = ConstU32<256>;
+    type MaxMetadataLength = ConstU32<1024>;
 }
 
 frame_support::construct_runtime!(

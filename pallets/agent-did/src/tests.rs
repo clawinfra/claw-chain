@@ -45,8 +45,6 @@ fn origin(id: u64) -> <Test as frame_system::Config>::RuntimeOrigin {
     frame_system::RawOrigin::Signed(id).into()
 }
 
-// ========== register_did tests ==========
-
 #[test]
 fn register_did_works() {
     new_test_ext().execute_with(|| {
@@ -86,7 +84,7 @@ fn register_did_fails_if_already_registered() {
 #[test]
 fn register_did_fails_with_too_long_metadata() {
     new_test_ext().execute_with(|| {
-        let metadata = vec![b'x'; 1025]; // exceeds MaxMetadataLength = 1024
+        let metadata = vec![b'x'; 1025];
         assert_noop!(
             AgentDid::register_did(origin(1), metadata),
             crate::Error::<Test>::MetadataTooLong
@@ -94,17 +92,13 @@ fn register_did_fails_with_too_long_metadata() {
     });
 }
 
-// ========== update_did tests ==========
-
 #[test]
 fn update_did_works() {
     new_test_ext().execute_with(|| {
         assert_ok!(AgentDid::register_did(origin(1), b"{}".to_vec()));
-
         System::set_block_number(5);
         let new_meta = b"{\"updated\":true}".to_vec();
         assert_ok!(AgentDid::update_did(origin(1), new_meta.clone()));
-
         let doc = DidDocuments::<Test>::get(1u64).unwrap();
         assert_eq!(doc.metadata.to_vec(), new_meta);
         assert_eq!(doc.updated_at, 5);
@@ -133,14 +127,11 @@ fn update_did_fails_after_deactivation() {
     });
 }
 
-// ========== deactivate_did tests ==========
-
 #[test]
 fn deactivate_did_works() {
     new_test_ext().execute_with(|| {
         assert_ok!(AgentDid::register_did(origin(1), b"{}".to_vec()));
         assert_ok!(AgentDid::deactivate_did(origin(1)));
-
         let doc = DidDocuments::<Test>::get(1u64).unwrap();
         assert_eq!(doc.status, DidStatus::Deactivated);
     });
@@ -158,24 +149,19 @@ fn deactivate_did_fails_if_already_deactivated() {
     });
 }
 
-// ========== add_service_endpoint tests ==========
-
 #[test]
 fn add_service_endpoint_works() {
     new_test_ext().execute_with(|| {
         assert_ok!(AgentDid::register_did(origin(1), b"{}".to_vec()));
-
         assert_ok!(AgentDid::add_service_endpoint(
             origin(1),
             b"AgentMessaging".to_vec(),
             b"https://agent.example.com/msg".to_vec(),
         ));
-
         let ep = ServiceEndpoints::<Test>::get(1u64, 0u32).expect("endpoint should exist");
         assert_eq!(ep.service_type.to_vec(), b"AgentMessaging".to_vec());
         assert_eq!(ep.service_url.to_vec(), b"https://agent.example.com/msg".to_vec());
         assert_eq!(ServiceEndpointCount::<Test>::get(1u64), 1);
-
         let doc = DidDocuments::<Test>::get(1u64).unwrap();
         assert_eq!(doc.next_service_id, 1);
     });
@@ -185,16 +171,10 @@ fn add_service_endpoint_works() {
 fn add_service_endpoint_fails_on_too_many() {
     new_test_ext().execute_with(|| {
         assert_ok!(AgentDid::register_did(origin(1), b"{}".to_vec()));
-
         for i in 0..5u32 {
             let url = format!("https://ep{}.example.com", i).into_bytes();
-            assert_ok!(AgentDid::add_service_endpoint(
-                origin(1),
-                b"RpcNode".to_vec(),
-                url,
-            ));
+            assert_ok!(AgentDid::add_service_endpoint(origin(1), b"RpcNode".to_vec(), url));
         }
-
         assert_noop!(
             AgentDid::add_service_endpoint(
                 origin(1),
@@ -206,18 +186,13 @@ fn add_service_endpoint_fails_on_too_many() {
     });
 }
 
-// ========== remove_service_endpoint tests ==========
-
 #[test]
 fn remove_service_endpoint_works() {
     new_test_ext().execute_with(|| {
         assert_ok!(AgentDid::register_did(origin(1), b"{}".to_vec()));
         assert_ok!(AgentDid::add_service_endpoint(
-            origin(1),
-            b"AgentMessaging".to_vec(),
-            b"https://agent.example.com/msg".to_vec(),
+            origin(1), b"AgentMessaging".to_vec(), b"https://agent.example.com/msg".to_vec(),
         ));
-
         assert_eq!(ServiceEndpointCount::<Test>::get(1u64), 1);
         assert_ok!(AgentDid::remove_service_endpoint(origin(1), 0u32));
         assert!(ServiceEndpoints::<Test>::get(1u64, 0u32).is_none());
@@ -243,9 +218,7 @@ fn add_service_endpoint_fails_on_deactivated_did() {
         assert_ok!(AgentDid::deactivate_did(origin(1)));
         assert_noop!(
             AgentDid::add_service_endpoint(
-                origin(1),
-                b"RpcNode".to_vec(),
-                b"https://example.com".to_vec(),
+                origin(1), b"RpcNode".to_vec(), b"https://example.com".to_vec(),
             ),
             crate::Error::<Test>::DidDeactivated
         );
