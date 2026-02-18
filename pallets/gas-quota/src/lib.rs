@@ -339,7 +339,7 @@ pub mod pallet {
             let discount = T::FeeDiscountPerKStake::get();
             let stake_k = stake / (T::StakePerFreeTx::get().saturating_mul(1000u32.into()));
             let total_discount = discount.saturating_pow(
-                stake_k.try_into().unwrap_or(0u32),
+                stake_k.try_into().unwrap_or(0usize),
             );
             total_discount.mul_floor(base_fee).max(base_fee / 10u32.into()) // floor at 10% of base
         }
