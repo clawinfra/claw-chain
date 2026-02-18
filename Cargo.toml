@@ -3,11 +3,10 @@ members = [
     "node",
     "runtime",
     "pallets/agent-registry",
+    "pallets/agent-did",
     "pallets/claw-token",
     "pallets/reputation",
     "pallets/task-market",
-    "pallets/gas-quota",
-    "pallets/rpc-registry",
 ]
 resolver = "2"
 
@@ -95,11 +94,12 @@ substrate-wasm-builder = { version = "31.1" }
 
 # ClawChain pallets
 pallet-agent-registry = { path = "pallets/agent-registry", default-features = false }
+pallet-agent-did = { path = "pallets/agent-did", default-features = false }
 pallet-claw-token = { path = "pallets/claw-token", default-features = false }
 pallet-reputation = { path = "pallets/reputation", default-features = false }
 pallet-task-market = { path = "pallets/task-market", default-features = false }
-pallet-rpc-registry = { path = "pallets/rpc-registry", default-features = false }
 pallet-gas-quota = { path = "pallets/gas-quota", default-features = false }
+pallet-rpc-registry = { path = "pallets/rpc-registry", default-features = false }
 
 # Serde
 serde = { version = "1.0", features = ["derive"] }
