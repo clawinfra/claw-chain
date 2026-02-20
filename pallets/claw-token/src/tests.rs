@@ -1,7 +1,9 @@
 //! Unit tests for the CLAW Token pallet.
 
 use crate as pallet_claw_token;
-use crate::pallet::{AirdropClaimed, ContributorScores, TotalContributionScore};
+use crate::pallet::{
+    AirdropClaimed, AirdropDistributed, ContributorScores, Event, TotalContributionScore,
+};
 use frame_support::{
     assert_noop, assert_ok, derive_impl, parameter_types,
     traits::{ConstU128, ConstU32, ConstU64},
@@ -48,7 +50,7 @@ impl pallet_balances::Config for Test {
     type DoneSlashHandler = ();
 }
 
-// Airdrop pool: 400 tokens (simplified for testing)
+// Airdrop pool: 400,000 tokens (simplified for testing)
 parameter_types! {
     pub const TestAirdropPool: u128 = 400_000;
 }
@@ -86,7 +88,7 @@ fn account(id: u64) -> <Test as frame_system::Config>::RuntimeOrigin {
     frame_system::RawOrigin::Signed(id).into()
 }
 
-// ========== Tests ==========
+// ========== Record Contribution Tests ==========
 
 #[test]
 fn record_contribution_works() {
@@ -99,6 +101,22 @@ fn record_contribution_works() {
 }
 
 #[test]
+fn record_contribution_emits_event() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 1, 100));
+
+        System::assert_has_event(
+            Event::<Test>::ContributionRecorded {
+                contributor: 1,
+                score: 100,
+                total_score: 100,
+            }
+            .into(),
+        );
+    });
+}
+
+#[test]
 fn record_contribution_accumulates() {
     new_test_ext().execute_with(|| {
         assert_ok!(ClawTokenPallet::record_contribution(root(), 1, 100));
@@ -106,6 +124,30 @@ fn record_contribution_accumulates() {
 
         assert_eq!(ContributorScores::<Test>::get(1), 150);
         assert_eq!(TotalContributionScore::<Test>::get(), 150);
+
+        // Check accumulated event
+        System::assert_has_event(
+            Event::<Test>::ContributionRecorded {
+                contributor: 1,
+                score: 50,
+                total_score: 150,
+            }
+            .into(),
+        );
+    });
+}
+
+#[test]
+fn record_contribution_multiple_contributors() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 1, 100));
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 2, 200));
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 3, 300));
+
+        assert_eq!(ContributorScores::<Test>::get(1), 100);
+        assert_eq!(ContributorScores::<Test>::get(2), 200);
+        assert_eq!(ContributorScores::<Test>::get(3), 300);
+        assert_eq!(TotalContributionScore::<Test>::get(), 600);
     });
 }
 
@@ -120,6 +162,41 @@ fn record_contribution_requires_root() {
 }
 
 #[test]
+fn record_contribution_zero_score() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 1, 0));
+        assert_eq!(ContributorScores::<Test>::get(1), 0);
+        assert_eq!(TotalContributionScore::<Test>::get(), 0);
+    });
+}
+
+#[test]
+fn record_contribution_large_score() {
+    new_test_ext().execute_with(|| {
+        let large_score = 1_000_000_000u64;
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 1, large_score));
+        assert_eq!(ContributorScores::<Test>::get(1), large_score);
+        assert_eq!(TotalContributionScore::<Test>::get(), large_score as u128);
+    });
+}
+
+#[test]
+fn record_contribution_fails_unsigned() {
+    new_test_ext().execute_with(|| {
+        assert_noop!(
+            ClawTokenPallet::record_contribution(
+                frame_system::RawOrigin::None.into(),
+                1,
+                100
+            ),
+            sp_runtime::DispatchError::BadOrigin
+        );
+    });
+}
+
+// ========== Claim Airdrop Tests ==========
+
+#[test]
 fn claim_airdrop_works() {
     new_test_ext().execute_with(|| {
         // Record contributions for two users
@@ -129,10 +206,31 @@ fn claim_airdrop_works() {
         // User 1 claims: should get 100/400 * 400_000 = 100_000
         assert_ok!(ClawTokenPallet::claim_airdrop(account(1)));
         assert!(AirdropClaimed::<Test>::get(1));
+        assert_eq!(AirdropDistributed::<Test>::get(), 100_000);
 
         // User 2 claims: should get 300/400 * 400_000 = 300_000
         assert_ok!(ClawTokenPallet::claim_airdrop(account(2)));
         assert!(AirdropClaimed::<Test>::get(2));
+        assert_eq!(AirdropDistributed::<Test>::get(), 400_000);
+    });
+}
+
+#[test]
+fn claim_airdrop_emits_event() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 1, 100));
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 2, 100));
+
+        assert_ok!(ClawTokenPallet::claim_airdrop(account(1)));
+
+        // claim = 100/200 * 400_000 = 200_000
+        System::assert_has_event(
+            Event::<Test>::AirdropClaimed {
+                who: 1,
+                amount: 200_000,
+            }
+            .into(),
+        );
     });
 }
 
@@ -160,19 +258,71 @@ fn claim_airdrop_fails_without_score() {
 }
 
 #[test]
-fn treasury_spend_works() {
+fn claim_airdrop_fails_with_zero_score() {
     new_test_ext().execute_with(|| {
-        assert_ok!(ClawTokenPallet::treasury_spend(root(), 1, 50_000));
+        // Record zero score
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 1, 0));
+
+        assert_noop!(
+            ClawTokenPallet::claim_airdrop(account(1)),
+            crate::Error::<Test>::NoContributionScore
+        );
     });
 }
 
 #[test]
-fn treasury_spend_requires_root() {
+fn claim_airdrop_fails_unsigned() {
     new_test_ext().execute_with(|| {
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 1, 100));
+
         assert_noop!(
-            ClawTokenPallet::treasury_spend(account(1), 2, 50_000),
+            ClawTokenPallet::claim_airdrop(frame_system::RawOrigin::None.into()),
             sp_runtime::DispatchError::BadOrigin
         );
+    });
+}
+
+#[test]
+fn claim_airdrop_proportional_calculation() {
+    new_test_ext().execute_with(|| {
+        // Set up: 4 contributors with known ratios
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 1, 100)); // 10%
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 2, 200)); // 20%
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 3, 300)); // 30%
+
+        // Total = 600
+        // Note: there's an account 4 with 400 missing - but we test with what we have
+
+        // Account 1: 100/600 * 400_000 = 66_666 (integer division)
+        assert_ok!(ClawTokenPallet::claim_airdrop(account(1)));
+        // 100 * 400_000 / 600 = 66666
+        assert_eq!(AirdropDistributed::<Test>::get(), 66_666);
+
+        // Account 2: 200/600 * 400_000 = 133_333
+        assert_ok!(ClawTokenPallet::claim_airdrop(account(2)));
+
+        // Account 3: 300/600 * 400_000 = 200_000
+        assert_ok!(ClawTokenPallet::claim_airdrop(account(3)));
+    });
+}
+
+#[test]
+fn claim_airdrop_single_contributor_gets_full_pool() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 1, 500));
+
+        assert_ok!(ClawTokenPallet::claim_airdrop(account(1)));
+
+        // Only contributor gets entire pool
+        // 500/500 * 400_000 = 400_000
+        System::assert_has_event(
+            Event::<Test>::AirdropClaimed {
+                who: 1,
+                amount: 400_000,
+            }
+            .into(),
+        );
+        assert_eq!(AirdropDistributed::<Test>::get(), 400_000);
     });
 }
 
@@ -191,5 +341,111 @@ fn multiple_contributors_proportional_claims() {
         assert_ok!(ClawTokenPallet::claim_airdrop(account(1)));
         assert_ok!(ClawTokenPallet::claim_airdrop(account(2)));
         assert_ok!(ClawTokenPallet::claim_airdrop(account(3)));
+
+        // Total distributed should equal full pool
+        assert_eq!(AirdropDistributed::<Test>::get(), 400_000);
+    });
+}
+
+// ========== Treasury Spend Tests ==========
+
+#[test]
+fn treasury_spend_works() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(ClawTokenPallet::treasury_spend(root(), 1, 50_000));
+    });
+}
+
+#[test]
+fn treasury_spend_emits_event() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(ClawTokenPallet::treasury_spend(root(), 1, 50_000));
+
+        System::assert_has_event(
+            Event::<Test>::TreasurySpend {
+                to: 1,
+                amount: 50_000,
+            }
+            .into(),
+        );
+    });
+}
+
+#[test]
+fn treasury_spend_requires_root() {
+    new_test_ext().execute_with(|| {
+        assert_noop!(
+            ClawTokenPallet::treasury_spend(account(1), 2, 50_000),
+            sp_runtime::DispatchError::BadOrigin
+        );
+    });
+}
+
+#[test]
+fn treasury_spend_zero_amount() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(ClawTokenPallet::treasury_spend(root(), 1, 0));
+
+        System::assert_has_event(
+            Event::<Test>::TreasurySpend {
+                to: 1,
+                amount: 0,
+            }
+            .into(),
+        );
+    });
+}
+
+#[test]
+fn treasury_spend_large_amount() {
+    new_test_ext().execute_with(|| {
+        // Large amount — just emits event, no balance checks in current impl
+        assert_ok!(ClawTokenPallet::treasury_spend(root(), 1, u128::MAX));
+    });
+}
+
+// ========== Storage State Tests ==========
+
+#[test]
+fn initial_storage_state() {
+    new_test_ext().execute_with(|| {
+        assert_eq!(ContributorScores::<Test>::get(1), 0);
+        assert!(!AirdropClaimed::<Test>::get(1));
+        assert_eq!(TotalContributionScore::<Test>::get(), 0);
+        assert_eq!(AirdropDistributed::<Test>::get(), 0);
+    });
+}
+
+#[test]
+fn airdrop_claimed_flag_persists() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 1, 100));
+        assert_ok!(ClawTokenPallet::claim_airdrop(account(1)));
+
+        // Claimed flag should be true
+        assert!(AirdropClaimed::<Test>::get(1));
+
+        // Unclaimed account should be false
+        assert!(!AirdropClaimed::<Test>::get(2));
+    });
+}
+
+#[test]
+fn contribution_score_not_reset_after_claim() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 1, 100));
+        assert_ok!(ClawTokenPallet::claim_airdrop(account(1)));
+
+        // Score should persist after claim
+        assert_eq!(ContributorScores::<Test>::get(1), 100);
+    });
+}
+
+#[test]
+fn record_contribution_to_nonexistent_account() {
+    new_test_ext().execute_with(|| {
+        // Account 99 has no genesis balance, but contribution score is just storage
+        assert_ok!(ClawTokenPallet::record_contribution(root(), 99, 500));
+        assert_eq!(ContributorScores::<Test>::get(99), 500);
     });
 }
