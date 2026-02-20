@@ -1,0 +1,181 @@
+# ClawChain Validator Node — Production Docker Image
+#
+# Multi-stage build:
+#   Stage 1 (builder):  Rust toolchain → compiles clawchain-node
+#   Stage 2 (runtime):  debian-slim    → minimal production image
+#
+# Build:
+#   docker build -f deploy/Dockerfile.validator -t clawchain-validator:latest .
+#
+# Run (quick start — dev chain):
+#   docker run --rm -it \
+#     -p 30333:30333 -p 9944:9944 -p 9615:9615 \
+#     clawchain-validator:latest
+#
+# See deploy/docker-compose.validator.yml for the full production stack.
+#
+# Environment variables (all optional, have defaults):
+#   NODE_NAME        Human-readable node name shown in telemetry  [ClawChain-Validator]
+#   CHAIN_SPEC       Path to raw chain spec JSON file or built-in name (dev|local) [dev]
+#   BASE_PATH        Data directory inside the container          [/data]
+#   RPC_PORT         WebSocket/HTTP RPC port                      [9944]
+#   P2P_PORT         P2P networking port                          [30333]
+#   METRICS_PORT     Prometheus metrics port                      [9615]
+#   EXTRA_ARGS       Additional CLI flags passed verbatim         []
+#   RUST_LOG         Log level filter                             [info]
+
+# ============================================================
+# Stage 1: Builder
+# ============================================================
+FROM docker.io/rust:1.82-bookworm AS builder
+
+# Install native build dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        protobuf-compiler \
+        libclang-dev \
+        libssl-dev \
+        pkg-config \
+        build-essential \
+        git \
+        ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Add wasm target (required for Substrate runtime compilation)
+RUN rustup target add wasm32-unknown-unknown
+
+WORKDIR /build
+
+# Cache dependencies: copy manifests first, build deps only, then copy source.
+# This layer is cached as long as Cargo.toml / Cargo.lock don't change.
+COPY Cargo.toml Cargo.lock ./
+COPY node/Cargo.toml           node/Cargo.toml
+COPY runtime/Cargo.toml        runtime/Cargo.toml
+COPY pallets/agent-registry/Cargo.toml   pallets/agent-registry/Cargo.toml
+COPY pallets/claw-token/Cargo.toml       pallets/claw-token/Cargo.toml
+COPY pallets/reputation/Cargo.toml       pallets/reputation/Cargo.toml
+COPY pallets/task-market/Cargo.toml      pallets/task-market/Cargo.toml
+
+# Create stub lib/main files so `cargo build` can resolve dependencies
+RUN mkdir -p node/src runtime/src \
+        pallets/agent-registry/src pallets/claw-token/src \
+        pallets/reputation/src pallets/task-market/src && \
+    echo 'fn main() {}' > node/src/main.rs && \
+    touch node/src/chain_spec.rs node/src/cli.rs node/src/command.rs \
+          node/src/rpc.rs node/src/service.rs node/build.rs && \
+    echo '#![no_std] pub fn noop() {}' > runtime/src/lib.rs && \
+    for p in agent-registry claw-token reputation task-market; do \
+        echo '#![no_std] pub fn noop() {}' > pallets/$p/src/lib.rs; \
+    done
+
+# Pre-build dependencies (cached layer)
+RUN cargo build --release 2>/dev/null || true
+
+# Now copy actual source and do the real build
+COPY . .
+
+# Force rebuild of real sources by touching key files
+RUN touch node/src/main.rs runtime/src/lib.rs
+
+RUN cargo build --release && \
+    strip target/release/clawchain-node
+
+# ============================================================
+# Stage 2: Runtime (minimal production image)
+# ============================================================
+FROM docker.io/debian:bookworm-slim AS runtime
+
+# Install minimal runtime dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        libssl3 \
+        tini && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create a dedicated non-root user
+RUN useradd --system --uid 1000 --gid 0 \
+    --no-create-home --shell /usr/sbin/nologin \
+    --comment "ClawChain validator service account" \
+    clawchain
+
+# Copy the compiled binary from builder
+COPY --from=builder /build/target/release/clawchain-node /usr/local/bin/clawchain-node
+
+# Ensure it's executable
+RUN chmod +x /usr/local/bin/clawchain-node
+
+# Create directories with correct ownership
+RUN mkdir -p /data /chain-specs /keystore && \
+    chown -R clawchain:root /data /chain-specs /keystore && \
+    chmod 0750 /data /chain-specs /keystore
+
+# Copy built-in chain specs (if they exist in the repo)
+# COPY --chown=clawchain:root specs/ /chain-specs/
+
+# Switch to non-root user
+USER clawchain
+
+WORKDIR /data
+
+# ============================================================
+# Port declarations
+# ============================================================
+# 30333 — P2P networking (must be reachable from the internet)
+# 9944  — RPC / WebSocket (restrict to trusted sources in production)
+# 9933  — Legacy HTTP RPC (deprecated; kept for compatibility)
+# 9615  — Prometheus metrics
+EXPOSE 30333 9944 9933 9615
+
+# ============================================================
+# Health check — query /health on the RPC port
+# ============================================================
+HEALTHCHECK \
+    --interval=30s \
+    --timeout=10s \
+    --start-period=90s \
+    --retries=3 \
+    CMD curl -sf http://localhost:${RPC_PORT:-9944}/health || exit 1
+
+# ============================================================
+# Default environment variables
+# ============================================================
+ENV NODE_NAME="ClawChain-Validator" \
+    CHAIN_SPEC="dev" \
+    BASE_PATH="/data" \
+    RPC_PORT="9944" \
+    P2P_PORT="30333" \
+    METRICS_PORT="9615" \
+    RUST_LOG="info" \
+    RUST_BACKTRACE="1" \
+    EXTRA_ARGS=""
+
+# ============================================================
+# Entrypoint — tini as PID 1 for proper signal handling
+# ============================================================
+COPY --chown=root:root deploy/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+# Fallback: if entrypoint script is not present, use inline CMD below.
+# The ENTRYPOINT will be overridden by docker-compose if needed.
+
+ENTRYPOINT ["/usr/bin/tini", "--"]
+
+# Default command — uses ENV vars, can be overridden in docker-compose
+CMD ["/bin/sh", "-c", \
+    "exec clawchain-node \
+     --validator \
+     --base-path ${BASE_PATH} \
+     --chain ${CHAIN_SPEC} \
+     --name ${NODE_NAME} \
+     --port ${P2P_PORT} \
+     --rpc-port ${RPC_PORT} \
+     --rpc-external \
+     --rpc-cors all \
+     --rpc-methods safe \
+     --prometheus-external \
+     --prometheus-port ${METRICS_PORT} \
+     --state-pruning 256 \
+     --blocks-pruning archive-canonical \
+     --database paritydb \
+     --log ${RUST_LOG} \
+     ${EXTRA_ARGS}"]

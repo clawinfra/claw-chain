@@ -1,0 +1,186 @@
+# ClawChain Validator — Docker Compose Stack
+#
+# One-command start:
+#   cp deploy/.env.example .env   # then edit .env
+#   docker compose -f deploy/docker-compose.validator.yml up -d
+#
+# With monitoring (Prometheus + Grafana):
+#   docker compose -f deploy/docker-compose.validator.yml \
+#     --profile monitoring up -d
+#
+# Stop:
+#   docker compose -f deploy/docker-compose.validator.yml down
+#
+# Follow logs:
+#   docker compose -f deploy/docker-compose.validator.yml logs -f validator
+#
+# Rotate session keys:
+#   docker compose -f deploy/docker-compose.validator.yml \
+#     exec validator curl -s -H 'Content-Type: application/json' \
+#     --data '{"id":1,"jsonrpc":"2.0","method":"author_rotateKeys","params":[]}' \
+#     http://localhost:9944
+
+name: clawchain-validator
+
+# ============================================================
+# Reusable logging configuration
+# ============================================================
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "50m"
+    max-file: "5"
+
+# ============================================================
+# Services
+# ============================================================
+services:
+
+  # ----------------------------------------------------------
+  # Primary: ClawChain Validator Node
+  # ----------------------------------------------------------
+  validator:
+    build:
+      context: ..                          # repo root (so COPY . . works)
+      dockerfile: deploy/Dockerfile.validator
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+    image: clawchain-validator:${CLAWCHAIN_VERSION:-latest}
+    container_name: clawchain-validator
+    restart: unless-stopped
+    logging: *default-logging
+
+    environment:
+      NODE_NAME:    ${NODE_NAME:-ClawChain-Validator}
+      CHAIN_SPEC:   ${CHAIN_SPEC:-dev}
+      BASE_PATH:    /data
+      RPC_PORT:     ${RPC_PORT:-9944}
+      P2P_PORT:     ${P2P_PORT:-30333}
+      METRICS_PORT: ${METRICS_PORT:-9615}
+      RUST_LOG:     ${RUST_LOG:-info}
+      RUST_BACKTRACE: "1"
+      # Pass any extra CLI flags via EXTRA_ARGS, e.g.:
+      # EXTRA_ARGS: "--bootnodes /ip4/1.2.3.4/tcp/30333/p2p/12D3KooW..."
+      EXTRA_ARGS:   ${EXTRA_ARGS:-}
+
+    ports:
+      # P2P — MUST be publicly reachable
+      - "${P2P_PORT:-30333}:30333"
+      # RPC — restrict to localhost or a trusted proxy in production
+      - "127.0.0.1:${RPC_PORT:-9944}:9944"
+      # Legacy HTTP RPC (optional, disabled by default; uncomment if needed)
+      # - "127.0.0.1:9933:9933"
+      # Prometheus metrics — restrict to internal network
+      - "127.0.0.1:${METRICS_PORT:-9615}:9615"
+
+    volumes:
+      # Persistent chain data (blocks, state, keystore)
+      - chain-data:/data
+      # Mount a local chain spec file (optional — comment out if using built-in)
+      # - ${CHAIN_SPEC_PATH:-./specs/clawchain-testnet.json}:/chain-specs/chain.json:ro
+
+    networks:
+      - clawchain-internal
+
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9944/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 90s
+      retries: 3
+
+    # Ensure the node gets enough open file descriptors
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  # ----------------------------------------------------------
+  # Optional profile: Prometheus (scrapes node metrics)
+  # ----------------------------------------------------------
+  prometheus:
+    profiles: ["monitoring"]
+    image: prom/prometheus:v2.53.0
+    container_name: clawchain-prometheus
+    restart: unless-stopped
+    logging: *default-logging
+
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"           # allows POST /-/reload
+
+    volumes:
+      - ../deploy/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+
+    ports:
+      - "127.0.0.1:9090:9090"
+
+    networks:
+      - clawchain-internal
+
+    depends_on:
+      validator:
+        condition: service_healthy
+
+  # ----------------------------------------------------------
+  # Optional profile: Grafana (visualise Prometheus data)
+  # ----------------------------------------------------------
+  grafana:
+    profiles: ["monitoring"]
+    image: grafana/grafana:11.1.0
+    container_name: clawchain-grafana
+    restart: unless-stopped
+    logging: *default-logging
+
+    environment:
+      GF_SECURITY_ADMIN_USER:     ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-changeme}
+      GF_USERS_ALLOW_SIGN_UP:     "false"
+      GF_SERVER_ROOT_URL:         ${GRAFANA_ROOT_URL:-http://localhost:3000}
+      GF_INSTALL_PLUGINS:         "grafana-clock-panel"
+
+    volumes:
+      - grafana-data:/var/lib/grafana
+      # Provision Prometheus datasource automatically
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+
+    ports:
+      - "127.0.0.1:3000:3000"
+
+    networks:
+      - clawchain-internal
+
+    depends_on:
+      - prometheus
+
+# ============================================================
+# Named volumes (persisted across container restarts)
+# ============================================================
+volumes:
+  chain-data:
+    name: clawchain-validator-data
+    labels:
+      com.clawchain.description: "ClawChain validator chain data and keystore"
+
+  prometheus-data:
+    name: clawchain-prometheus-data
+    labels:
+      com.clawchain.description: "Prometheus metrics storage"
+
+  grafana-data:
+    name: clawchain-grafana-data
+    labels:
+      com.clawchain.description: "Grafana dashboards and settings"
+
+# ============================================================
+# Networks
+# ============================================================
+networks:
+  clawchain-internal:
+    name: clawchain-internal
+    driver: bridge
