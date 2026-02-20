@@ -1,0 +1,40 @@
+{
+  "name": "@clawinfra/clawchain-sdk",
+  "version": "0.1.0",
+  "description": "TypeScript/JavaScript SDK for EvoClaw agents to interact with ClawChain L1",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "clawchain",
+    "evoclaw",
+    "substrate",
+    "blockchain",
+    "ai-agents",
+    "web3"
+  ],
+  "author": "ClawInfra <dev@clawinfra.io>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@polkadot/api": "^14.0.1",
+    "@polkadot/keyring": "^13.3.1",
+    "@polkadot/util": "^13.3.1",
+    "@polkadot/util-crypto": "^13.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/clawinfra/claw-chain.git",
+    "directory": "sdk/typescript"
+  }
+}
