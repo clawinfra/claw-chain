@@ -246,6 +246,59 @@ Score Range: 0 - 10,000 (basis points)
 
 ---
 
+### `pallet-agent-receipts` ✅ Built
+
+Verifiable on-chain receipts for AI agent activity attestation (**ProvenanceChain**).
+
+Every time an EvoClaw AI agent takes an action, it emits a cryptographic on-chain receipt:
+`agent_id + action_type + input_hash + output_hash + metadata + block_number + timestamp`.
+This makes autonomous agent decisions auditable and verifiable by anyone.
+
+#### Storage
+
+| Key | Value | Description |
+|-----|-------|-------------|
+| `Receipts` | `(AgentId, u64 nonce) → AgentReceipt` | All submitted receipts |
+| `AgentNonce` | `AgentId → u64` | Next receipt index per agent |
+| `ReceiptCount` | `u64` | Total receipts ever submitted (global counter) |
+
+#### Types
+
+```rust
+pub struct AgentReceipt<T: Config> {
+    pub agent_id: BoundedVec<u8, 64>,      // which agent acted
+    pub action_type: BoundedVec<u8, 64>,   // "trade", "tool_call", "message", etc.
+    pub input_hash: H256,                   // SHA-256 of inputs
+    pub output_hash: H256,                  // SHA-256 of outputs
+    pub metadata: BoundedVec<u8, 512>,     // optional JSON context
+    pub block_number: BlockNumber,
+    pub timestamp: u64,
+}
+```
+
+#### Extrinsics
+
+| Function | Who can call | Description |
+|----------|-------------|-------------|
+| `submit_receipt(agent_id, action_type, input_hash, output_hash, metadata, timestamp)` | Anyone (signed) | Submit a new activity receipt |
+| `clear_old_receipts(agent_id, before_nonce)` | Anyone (signed) | Prune old receipts for housekeeping |
+
+#### Events
+
+| Event | Data | When |
+|-------|------|------|
+| `ReceiptSubmitted` | agent_id, nonce, action_type, block_number | New receipt minted |
+| `ReceiptsCleared` | agent_id, count | Old receipts pruned |
+
+#### Use Cases
+
+- **Audit trail**: Every agent action is permanently recorded and verifiable
+- **Regulatory compliance**: Autonomous trading agents can be audited via receipt history
+- **Dispute resolution**: Cryptographic evidence of what an agent actually did
+- **Validator attestation**: Cross-reference receipts with observed network activity
+
+---
+
 ### `pallet-agent-messaging` 📋 Planned (Q3 2026)
 
 Three-tier privacy messaging.

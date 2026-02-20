@@ -1208,6 +1208,7 @@ dependencies = [
  "frame-try-runtime",
  "log",
  "pallet-agent-did",
+ "pallet-agent-receipts",
  "pallet-agent-registry",
  "pallet-aura",
  "pallet-authorship",
@@ -5319,6 +5320,22 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
 name = "pallet-agent-did"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+]
+
+[[package]]
+name = "pallet-agent-receipts"
 version = "0.1.0"
 dependencies = [
  "frame-benchmarking",

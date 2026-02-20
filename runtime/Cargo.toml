@@ -70,6 +70,7 @@ pallet-gas-quota = { workspace = true }
 pallet-agent-did = { workspace = true }
 pallet-rpc-registry = { workspace = true }
 pallet-quadratic-governance = { workspace = true }
+pallet-agent-receipts = { workspace = true }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true, optional = true }
@@ -126,6 +127,7 @@ std = [
     "pallet-rpc-registry/std",
     "pallet-agent-did/std",
     "pallet-quadratic-governance/std",
+    "pallet-agent-receipts/std",
     "substrate-wasm-builder",
 ]
 runtime-benchmarks = [
@@ -174,4 +176,5 @@ try-runtime = [
     "pallet-rpc-registry/try-runtime",
     "pallet-agent-did/try-runtime",
     "pallet-quadratic-governance/try-runtime",
+    "pallet-agent-receipts/try-runtime",
 ]

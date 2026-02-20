@@ -573,6 +573,15 @@ impl pallet_agent_did::Config for Runtime {
     type MaxVerificationMethods = ConstU32<5>;
 }
 
+/// Configure the Agent Receipts pallet (ProvenanceChain — verifiable agent activity attestation).
+impl pallet_agent_receipts::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+    type MaxAgentIdLen = ConstU32<64>;
+    type MaxActionTypeLen = ConstU32<64>;
+    type MaxMetadataLen = ConstU32<512>;
+}
+
 frame_support::construct_runtime!(
     pub enum Runtime {
         System: frame_system,
@@ -601,6 +610,7 @@ frame_support::construct_runtime!(
         GasQuota: pallet_gas_quota,
         AgentDid: pallet_agent_did,
         QuadraticGovernance: pallet_quadratic_governance,
+        AgentReceipts: pallet_agent_receipts,
     }
 );
 
