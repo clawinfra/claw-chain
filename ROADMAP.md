@@ -1,7 +1,7 @@
 # ClawChain Roadmap
 
-**Last Updated:** February 18, 2026  
-**Status:** Q2 2026 — Testnet Alpha Live, Implementation Underway 🚀
+**Last Updated:** February 21, 2026  
+**Status:** Q2 2026 — Testnet Alpha Live (spec v200), Implementation Underway 🚀
 
 ---
 
@@ -87,27 +87,34 @@ Full ADR details: [Issue #24](https://github.com/clawinfra/claw-chain/issues/24#
 - [x] Android edge agent: APK (foreground service + Compose UI dashboard)
 - [x] Termux installer for Android CLI users (`scripts/install-termux.sh`)
 - [x] `local_testnet_config` with multi-validator support ready for mainnet path
+- [x] **`pallet-agent-did`** — W3C-compatible DID system deployed via forkless runtime upgrade ✅
+  - Block: `0x754c8f8373fd3090d9e9dc19c6b04193543f19576b23c8a68cf56d5301d96cc3`
+  - Runtime spec bumped: **100 → 200**
+- [x] **`pallet-quadratic-governance`** — Quadratic voting deployed (spec v200) ✅
+- [x] **`pallet-agent-receipts`** — On-chain audit attestation layer deployed ✅
+- [x] **EvoClaw DID Auto-Discovery** implemented (`internal/clawchain/discovery.go`, 91.6% coverage) ✅
+- [x] **shield-agent** (`clawinfra/shield-agent`) — AI-powered pallet audit agent shipped ✅
+  - Static analysis for Solidity/EVM and Substrate/Rust pallets
+  - Audit results attested on-chain via `pallet-agent-receipts`
+  - Continuous scanning replaces point-in-time external audits (see Security Philosophy below)
 
 **Remaining Q2 Goals:**
-- [ ] `pallet-agent-did` — W3C-compatible DID system (ADR-003) — *Next up*
-- [ ] `pallet-quadratic-governance` — Quadratic voting (ADR-004) — *Blocks on agent-did*
 - [ ] `pallet-ibc-lite` — Cross-chain message passing (ADR-005)
 - [ ] `pallet-service-market` v2 — X402-integrated, reputation-gated (ADR-006)
 - [ ] `pallet-anon-messaging` — Encrypted agent DMs Phase 1 (ADR-010)
-- [ ] Auto-Discovery implementation in EvoClaw
+- [ ] Enable DID auto-discovery on EvoClaw hub (`autoDiscover: true`)
 - [ ] Agent SDK (TypeScript/JavaScript) — alpha release
 - [ ] Faucet for test CLAW tokens
 - [ ] Block explorer (lite version)
 - [ ] 50+ testnet validators recruited
 - [ ] Validator node setup documentation
-- [ ] Runtime upgrade to spec v200+ (DID + governance live)
 
 **GitHub Issues (Q2 Milestone — #27–#36):**
 - [ ] #27 — Multi-validator testnet setup
 - [ ] #28 — Agent SDK TypeScript alpha
 - [x] #29 — `pallet-gas-quota` ✅ CLOSED
-- [ ] #30 — `pallet-agent-did` (ADR-003)
-- [ ] #31 — `pallet-quadratic-governance` (ADR-004)
+- [x] #30 — `pallet-agent-did` (ADR-003) ✅ CLOSED — deployed spec v200
+- [x] #31 — `pallet-quadratic-governance` (ADR-004) ✅ CLOSED — deployed spec v200
 - [ ] #32 — `pallet-ibc-lite` (ADR-005)
 - [ ] #33 — `pallet-service-market` v2 (ADR-006)
 - [ ] #34 — `pallet-anon-messaging` Phase 1 (ADR-010)
@@ -117,8 +124,9 @@ Full ADR details: [Issue #24](https://github.com/clawinfra/claw-chain/issues/24#
 **Technical Milestones:**
 - [x] Block production working (BABE/GRANDPA)
 - [x] Custom pallet deployment via runtime upgrade validated
-- [ ] Agent DID registration live
-- [ ] Quadratic governance vote live
+- [x] Agent DID registration live (spec v200) ✅
+- [x] Quadratic governance deployed (spec v200) ✅
+- [x] On-chain audit attestation via `pallet-agent-receipts` ✅
 - [ ] Test transactions from Agent SDK
 - [ ] Validator rewards distributing
 
@@ -136,14 +144,15 @@ Full ADR details: [Issue #24](https://github.com/clawinfra/claw-chain/issues/24#
 
 **Mainnet Path (multi-validator config ready):**
 1. External validator recruitment (10 → 50 → 100 nodes)
-2. Security audits (3 independent firms)
+2. shield-agent continuous audit passing (see Security Philosophy below)
 3. Genesis configuration finalized
 4. Airdrop snapshot taken (testnet contributors)
 5. Mainnet launch 🚀
 6. Airdrop distribution (40% of $CLAW supply)
 
 **Goals:**
-- [ ] Security audits completed (3+ firms)
+- [ ] shield-agent audit: all pallets passing (zero CRITICAL, zero HIGH)
+- [ ] shield-agent Substrate scanner live on CI (blocks merges on new HIGH findings)
 - [ ] Mainnet genesis prepared
 - [ ] Airdrop snapshot taken
 - [ ] Validator onboarding (100+ nodes)
@@ -155,9 +164,9 @@ Full ADR details: [Issue #24](https://github.com/clawinfra/claw-chain/issues/24#
 - [ ] First real economic transactions
 
 **Launch Criteria:**
-- 3 independent security audits passed
+- shield-agent audit clean (zero CRITICAL/HIGH findings across all pallets)
+- All audit attestations recorded on-chain via `pallet-agent-receipts`
 - 100+ validator commitments
-- $10M+ TVL in validator stakes
 - Agent SDK stable release
 - Documentation complete
 - Emergency pause multi-sig operational
@@ -167,6 +176,65 @@ Full ADR details: [Issue #24](https://github.com/clawinfra/claw-chain/issues/24#
 - 500+ active agents registered
 - 100+ service listings
 - First on-chain governance vote
+
+---
+
+---
+
+## 🛡️ Security Philosophy — Agent-Native Auditing
+
+ClawChain is not a traditional blockchain. It is a chain **for agents, trusted by agents** — not designed for CEX listings, institutional LPs, or human credibility signals. This changes the security model fundamentally.
+
+### Why We Don't Use Traditional Third-Party Audits
+
+Traditional blockchain audits (Trail of Bits, Zellic, Sec3) exist to produce a **trust signal for humans**: investors, exchanges, and ecosystem funds who need a one-time credibility checkbox. That model has three problems:
+
+1. **Point-in-time** — A 2025 audit doesn't catch a vulnerability introduced in a 2026 runtime upgrade
+2. **Wrong audience** — EvoClaw agents don't read PDF reports; they interact with on-chain state
+3. **Self-defeating** — Paying external firms to audit a system designed to autonomously verify itself undermines the protocol's core thesis
+
+### Our Approach: Continuous Agent-Driven Auditing
+
+We eat our own dogfood. ClawChain's security is verified by **ClawChain itself**, using the same agent infrastructure the protocol is designed to power:
+
+```
+ClawChain pallets → shield-agent (SubstrateScanner)
+                            ↓
+                    Vulnerability report
+                            ↓
+               pallet-agent-receipts (on-chain attestation)
+                            ↓
+                   Immutable audit trail on ClawChain
+```
+
+Every runtime upgrade triggers a new shield-agent scan. Every scan result is attested on-chain. Any agent or developer can query the full audit history via RPC — **more transparent than a PDF, and continuous instead of point-in-time**.
+
+### Security Gates (Replacing the Audit Requirement)
+
+| Gate | Requirement | Tool |
+|------|-------------|------|
+| **Per-PR** | No new CRITICAL/HIGH findings introduced | shield-agent in GitHub CI |
+| **Per-runtime-upgrade** | Full pallet re-scan before `setCode` | shield-agent SubstrateScanner |
+| **Pre-mainnet** | Zero CRITICAL, zero HIGH across all pallets | shield-agent ChainAuditReport |
+| **Ongoing** | Weekly full audit attestation on-chain | Scheduled cron via EvoClaw |
+
+### Vulnerability Categories Checked
+
+- `missing_weight` — calls with `Weight::zero()` or no weight annotation (DoS vector)
+- `unsafe_arithmetic` — `unwrap()`, `expect()`, explicit `panic!()`, unsafe numeric casts
+- `unsigned_transaction_abuse` — `ValidateUnsigned` without strict validation
+- `storage_without_deposit` — unbounded storage maps (state bloat vector)
+- `access_control` — `ensure_none`, `ensure_root` misuse, custom origin misconfiguration
+- `missing_benchmarks` — pallets with no `runtime-benchmarks` feature (inaccurate weights)
+
+### On-Chain Audit Trail
+
+All audit results are stored on-chain via `pallet-agent-receipts`. The audit trail is:
+- **Immutable** — recorded on ClawChain, tamper-evident
+- **Queryable** — any agent can fetch audit history via RPC
+- **Continuous** — updated on every runtime upgrade, not just at launch
+
+This is the proof that ClawChain works: its own security is verified by the protocol it provides.
 
 ---
 
@@ -292,9 +360,10 @@ Full ADR details: [Issue #24](https://github.com/clawinfra/claw-chain/issues/24#
 ## 🚧 Risk Mitigation
 
 ### Technical Risks
-- **Bridge hacks:** Delay bridges until audits complete (Q4 earliest)
+- **Pallet vulnerabilities:** shield-agent continuous scanning on every runtime upgrade; zero CRITICAL/HIGH required for mainnet
+- **Bridge hacks:** Delay bridges until shield-agent audit clean + 3 months post-mainnet stability (Q4 earliest)
 - **Consensus failures:** Testnet for 3+ months minimum before mainnet
-- **Smart contract bugs:** Formal verification for critical pallets
+- **Smart contract bugs:** Formal verification for critical pallets; shield-agent CI gate blocks merges
 - **Scalability bottlenecks:** Profiling and optimization sprints (Q3)
 - **External API dependency:** Rejected (ADR-009) — all oracle logic is on-chain only
 
