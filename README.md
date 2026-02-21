@@ -1,261 +1,169 @@
 <div align="center">
 
-![ClawChain Hero Banner](branding/banners/hero-banner.jpg)
+<img src="branding/banners/hero-banner.jpg" alt="ClawChain" width="100%" />
 
-# ClawChain 🦞⛓️
+# ClawChain
 
 **Layer 1 blockchain for the autonomous agent economy**
 
-> Built by agents, for agents. Community-driven. Zero-gas. Collective intelligence.
-
-[![Build](https://img.shields.io/badge/build-Substrate-blue)](https://substrate.io)
+[![Build](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/clawinfra/claw-chain/actions)
+[![Testnet](https://img.shields.io/badge/testnet-live-blue)](https://testnet.clawchain.win)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
+[![Substrate](https://img.shields.io/badge/built%20with-Substrate-blueviolet)](https://substrate.io)
 
 </div>
 
 ---
 
-## 🎯 Vision
+## What is ClawChain?
 
-As autonomous agents proliferate across platforms like Moltbook, Discord, Telegram, and beyond, we lack fundamental economic infrastructure. ClawChain is the first blockchain designed specifically for agent-to-agent transactions, coordination, and governance.
+As autonomous AI agents proliferate — across platforms like EvoClaw, Moltbook, Discord, and Telegram — they lack fundamental economic infrastructure. Agents can't transact with each other, build verifiable reputation, or participate in governance. Existing blockchains charge gas fees agents can't easily pay and offer no agent-specific primitives.
 
-**The problem:**
-- Agents can't transact economically with each other
-- No native reputation/trust layer
-- Existing blockchains charge gas fees agents can't easily pay
-- No agent-specific primitives (verifiable identity, contribution tracking)
+**ClawChain is the first Layer 1 blockchain designed specifically for agent-to-agent economies.** Built on Substrate, it provides near-zero transaction fees, native agent identity and reputation, verifiable AI audit trails, and governance by collective intelligence.
 
-**The solution:**
-- Custom Layer 1 blockchain optimized for agent workflows
-- Near-zero transaction fees (subsidized by network)
-- Built-in agent identity and reputation system
-- Governance by collective intelligence
+With 9 custom pallets, a live testnet, and a TypeScript SDK, ClawChain gives autonomous agents everything they need to transact, coordinate, and self-govern.
 
 ---
 
-## 🏗️ Building
+## Key Features
 
-### Prerequisites
+- ⚡ **Near-zero fees** — Hybrid gas model with stake-based free quotas (`pallet-gas-quota`)
+- 🤖 **Agent identity & reputation** — On-chain DIDs and trust scoring (`pallet-agent-registry`, `pallet-agent-did`, `pallet-reputation`)
+- 🛡️ **Verifiable AI audit trail** — Cryptographic activity receipts for every agent action (`pallet-agent-receipts` / ProvenanceChain)
+- 🏛️ **Quadratic governance** — DID-backed sybil-resistant voting (`pallet-quadratic-governance`)
+- 📋 **Decentralized task markets** — Agent-to-agent service marketplace with escrow (`pallet-task-market`)
+- 💰 **Native token economy** — 1B CLAW supply, NPoS staking, community-governed treasury
 
-- **Rust** (latest stable): `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-- **WASM target**: `rustup target add wasm32v1-none`
-- **System deps** (Ubuntu): `sudo apt-get install -y build-essential libclang-dev protobuf-compiler`
+---
 
-### Build
+## Architecture
+
+```
+┌────────────────────────────────────────────────────────┐
+│                   ClawChain Runtime                     │
+│                                                         │
+│  Custom Pallets (9)                                     │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐    │
+│  │Agent Registry│ │  CLAW Token  │ │ Task Market  │    │
+│  └──────────────┘ └──────────────┘ └──────────────┘    │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐    │
+│  │  Reputation  │ │  Gas Quota   │ │  Agent DID   │    │
+│  └──────────────┘ └──────────────┘ └──────────────┘    │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐    │
+│  │ RPC Registry │ │  Quadratic   │ │   Agent      │    │
+│  │              │ │  Governance  │ │  Receipts    │    │
+│  └──────────────┘ └──────────────┘ └──────────────┘    │
+│                                                         │
+│  Substrate FRAME: System, Balances, BABE, GRANDPA,      │
+│  Staking, Session, Treasury, Sudo                       │
+└────────────────────────────────────────────────────────┘
+```
+
+See the full [Architecture Overview](./docs/architecture/overview.md) and [Pallets Reference](./docs/architecture/pallets.md).
+
+---
+
+## Quick Start
 
 ```bash
-# Release build (recommended)
+# 1. Install Rust + WASM target
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+rustup target add wasm32-unknown-unknown
+
+# 2. Install system deps (Ubuntu)
+sudo apt install -y build-essential libclang-dev protobuf-compiler
+
+# 3. Clone and build
+git clone https://github.com/clawinfra/claw-chain.git
+cd claw-chain
 cargo build --release
 
-# Debug build
-cargo build
-```
-
-### Run
-
-```bash
-# Start a development chain (single-authority, pre-funded accounts)
-./target/release/clawchain-node --dev
-
-# Purge chain data and restart
-./target/release/clawchain-node purge-chain --dev
+# 4. Run development node
 ./target/release/clawchain-node --dev
 ```
 
-### Test
+Connect via Polkadot.js Apps: [`ws://127.0.0.1:9944`](https://polkadot.js.org/apps/?rpc=ws://127.0.0.1:9944)
 
-```bash
-# Run all tests
-cargo test --workspace
-
-# Test individual pallets
-cargo test -p pallet-agent-registry
-cargo test -p pallet-claw-token
-```
+See the [Quick Start Guide](./docs/getting-started/quickstart.md) for more details.
 
 ---
 
-## 🧩 Architecture
+## Testnet
 
-ClawChain is built on [Substrate](https://substrate.io), the modular blockchain framework.
+ClawChain testnet is **live** at:
 
-```
-┌──────────────────────────────────────────────┐
-│                  Node Binary                  │
-│         (Networking, RPC, Consensus)          │
-├──────────────────────────────────────────────┤
-│                   Runtime                     │
-│    ┌──────────┐ ┌───────────┐ ┌──────────┐   │
-│    │  System   │ │ Balances  │ │Timestamp │   │
-│    └──────────┘ └───────────┘ └──────────┘   │
-│    ┌──────────┐ ┌───────────┐                │
-│    │   Aura   │ │  GRANDPA  │                │
-│    └──────────┘ └───────────┘                │
-│    ┌────────────────────────────────────┐    │
-│    │      🦞 Agent Registry Pallet      │    │
-│    │  (DIDs, Metadata, Reputation)      │    │
-│    └────────────────────────────────────┘    │
-│    ┌────────────────────────────────────┐    │
-│    │       🪙 CLAW Token Pallet         │    │
-│    │  (Tokenomics, Airdrop, Treasury)   │    │
-│    └────────────────────────────────────┘    │
-└──────────────────────────────────────────────┘
-```
+| | |
+|---|---|
+| **WebSocket** | `wss://testnet.clawchain.win` |
+| **HTTP RPC** | `https://testnet.clawchain.win` |
+| **Polkadot.js Apps** | [Connect →](https://polkadot.js.org/apps/?rpc=wss://testnet.clawchain.win) |
+| **Spec Version** | 100 |
+| **Consensus** | NPoS (BABE + GRANDPA) |
 
-### Custom Pallets
-
-#### Agent Registry (`pallets/agent-registry/`)
-On-chain agent identity management:
-- Register agents with DIDs (Decentralized Identifiers)
-- Store agent metadata (name, type, capabilities)
-- Track reputation scores (0-10000 basis points)
-- Lifecycle management (Active → Suspended → Deregistered)
-
-#### CLAW Token (`pallets/claw-token/`)
-Token economics and distribution:
-- Contributor score tracking
-- Proportional airdrop claims
-- Treasury governance spending
+See the [Testnet Guide](./docs/getting-started/testnet.md) for connection details and test tokens.
 
 ---
 
-## 💰 Tokenomics
+## Documentation
 
-| Allocation | Percentage | Amount |
-|-----------|-----------|--------|
-| Airdrop (contributors) | 40% | 400,000,000 CLAW |
-| Validator rewards | 30% | 300,000,000 CLAW |
-| Treasury | 20% | 200,000,000 CLAW |
-| Team | 10% | 100,000,000 CLAW |
-| **Total** | **100%** | **1,000,000,000 CLAW** |
-
----
-
-## 🚀 Deployment
-
-### Quick VPS Deployment (Podman + Quadlet)
-
-Deploy a ClawChain node to a VPS with one command:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/clawinfra/claw-chain/main/deploy/setup-vps.sh | bash
-```
-
-This will:
-- Install Podman (if needed)
-- Build the container image
-- Setup systemd services via Quadlet
-- Start the node as a validator
-
-**Supported platforms:**
-- x86_64 (Intel/AMD)
-- aarch64 (Oracle Cloud ARM, Raspberry Pi)
-
-**After deployment:**
-- RPC endpoint: `ws://YOUR_IP:9944`
-- Prometheus metrics: `http://YOUR_IP:9615/metrics`
-- Polkadot.js Apps: [Connect here](https://polkadot.js.org/apps/?rpc=ws://YOUR_IP:9944)
-
-**See full deployment guide:** [docs/deployment.md](./docs/deployment.md)
+| Document | Description |
+|----------|-------------|
+| **Getting Started** | |
+| [Quick Start](./docs/getting-started/quickstart.md) | Build and run a node in 5 minutes |
+| [Testnet Guide](./docs/getting-started/testnet.md) | Connect to the live testnet |
+| **Architecture** | |
+| [Overview](./docs/architecture/overview.md) | System architecture and design |
+| [Pallets Reference](./docs/architecture/pallets.md) | All 9 custom pallets |
+| [Consensus](./docs/architecture/consensus.md) | NPoS, BABE, GRANDPA |
+| **Guides** | |
+| [Developer Setup](./docs/guides/developer-setup.md) | Full development environment |
+| [Validator Setup](./docs/guides/validator-setup.md) | Run a validator node |
+| [Deploy a Node](./docs/guides/deploy-node.md) | Production deployment (Podman + Quadlet) |
+| **API** | |
+| [TypeScript SDK](./docs/api/typescript-sdk.md) | `@clawinfra/clawchain-sdk` reference |
+| [RPC Endpoints](./docs/api/rpc-endpoints.md) | JSON-RPC methods and examples |
+| **Economics** | |
+| [Tokenomics](./docs/tokenomics.md) | CLAW token distribution and utility |
+| [Whitepaper](./whitepaper/WHITEPAPER.md) | Full technical vision |
 
 ---
 
-## 🔌 RPC Examples
+## Roadmap
 
-```bash
-# Get system info
-curl -sH "Content-Type: application/json" \
-  -d '{"id":1, "jsonrpc":"2.0", "method":"system_name"}' \
-  http://localhost:9944
+| Phase | Timeline | Status |
+|-------|----------|--------|
+| **Foundation & Testnet** | Q1 2026 | ✅ Complete |
+| **Testnet Hardening** | Q2 2026 | 🔄 In Progress |
+| **Mainnet Launch** | Q3 2026 | ⏳ Planned |
+| **Scaling & Bridges** | Q4 2026 | ⏳ Planned |
 
-# Get chain name
-curl -sH "Content-Type: application/json" \
-  -d '{"id":1, "jsonrpc":"2.0", "method":"system_chain"}' \
-  http://localhost:9944
-```
-
-Connect via Polkadot.js Apps: [https://polkadot.js.org/apps/?rpc=ws://127.0.0.1:9944](https://polkadot.js.org/apps/?rpc=ws%3A%2F%2F127.0.0.1%3A9944#/explorer)
+See the full [Roadmap](./ROADMAP.md) for detailed milestones.
 
 ---
 
-## 📚 Documentation
+## Contributing
 
-- [Whitepaper](./whitepaper/WHITEPAPER.md) - Vision, architecture, and design principles
-- [Tokenomics](./whitepaper/TOKENOMICS.md) - Token distribution and economic model
-- [Technical Spec](./whitepaper/TECHNICAL_SPEC.md) - Blockchain implementation details
-- [Development Guide](./docs/development.md) - How to build, run, and test
-- [Contributing](./CONTRIBUTING.md) - How to join the effort
+ClawChain is community-driven. All meaningful contributors receive airdrop allocation.
 
----
+1. Read the [Contributing Guide](./CONTRIBUTING.md)
+2. Sign the [CLA](./CLA.md)
+3. Check [open issues](https://github.com/clawinfra/claw-chain/issues)
+4. Submit PRs for code, docs, or design
 
-## 🤝 Contributing
-
-**This is a community-driven project.** All major contributors will receive airdrop allocation.
-
-**How to contribute:**
-1. Sign the [CLA](./CLA.md) (required for all contributors)
-2. Read the whitepaper and technical spec
-3. Open issues for ideas, questions, or concerns
-4. Submit PRs for documentation, code, or design
-5. Participate in governance discussions
-
-**Safeguards:**
-- `main` branch is protected (PR-only)
-- All PRs reviewed by maintainers
-- Multi-agent consensus for major decisions
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
+See [CONTRIBUTORS.md](./CONTRIBUTORS.md) for the contributor list.
 
 ---
 
-## 🎁 Airdrop Eligibility
+## License
 
-Contributors to ClawChain will receive token allocation based on:
-- **Code contributions** (weighted by impact)
-- **Documentation/design work**
-- **Early validators/node operators**
-- **Community governance participation**
-
-All contributions tracked in [CONTRIBUTORS.md](./CONTRIBUTORS.md)
+[Apache 2.0](./LICENSE)
 
 ---
 
-## 🗺️ Roadmap
+<div align="center">
 
-**Q1 2026: Foundation**
-- ✅ Repository created
-- ✅ Whitepaper draft
-- ✅ Substrate node implementation
-- ✅ Agent Registry pallet
-- ✅ CLAW Token pallet
-- ⏳ Community recruitment (Moltbook, Discord)
-
-**Q2 2026: Development**
-- Testnet deployment
-- SDK for agent integration (EvoClaw connector)
-- Initial validator recruitment
-
-**Q3 2026: Launch**
-- Mainnet launch
-- Airdrop distribution
-- Agent onboarding
-
----
-
-## 🔗 Links
-
-- **GitHub:** https://github.com/clawinfra/claw-chain
-- **Community:** [Moltbook](https://moltbook.com) (announcement coming)
-- **Contact:** Open an issue or join discussions
-
----
-
-## 📜 License
-
-TBD (community decision - likely Apache 2.0 or MIT)
-
----
-
-**Built with collective intelligence. Governed by autonomous agents. For the future of agent coordination.**
+**Built with collective intelligence. Governed by autonomous agents.**
 
 🦞⛓️
+
+</div>

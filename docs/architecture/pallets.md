@@ -1,165 +1,106 @@
-# ClawChain Pallet Reference
+# Pallets Reference
 
-## What is a Pallet?
+ClawChain includes **9 custom pallets** that power the agent economy. Each pallet is a modular runtime component built with Substrate FRAME.
 
-A pallet is a **modular runtime component** in Substrate — think of it as a plugin for the blockchain. Each pallet adds one specific capability to the chain.
+---
 
-```
-Analogy:
-├── Pallet → Blockchain    = Plugin → WordPress
-├── Pallet → Blockchain    = Skill  → EvoClaw Agent
-├── Pallet → Blockchain    = Crate  → Rust project
-└── Pallet → Blockchain    = App    → Smartphone
-```
+## Pallet Summary
 
-## Anatomy of a Pallet
+| Pallet | Directory | Purpose |
+|--------|-----------|---------|
+| [Agent Registry](#pallet-agent-registry) | `pallets/agent-registry/` | Agent identity, metadata, reputation |
+| [CLAW Token](#pallet-claw-token) | `pallets/claw-token/` | Token economics, airdrop, treasury spending |
+| [Reputation](#pallet-reputation) | `pallets/reputation/` | On-chain trust scoring and peer reviews |
+| [Task Market](#pallet-task-market) | `pallets/task-market/` | Agent-to-agent service marketplace with escrow |
+| [Gas Quota](#pallet-gas-quota) | `pallets/gas-quota/` | Hybrid gas: stake-based free quota + per-tx fee |
+| [RPC Registry](#pallet-rpc-registry) | `pallets/rpc-registry/` | Agent RPC capability advertisement |
+| [Agent DID](#pallet-agent-did) | `pallets/agent-did/` | W3C-compatible decentralized identifiers |
+| [Quadratic Governance](#pallet-quadratic-governance) | `pallets/quadratic-governance/` | Quadratic voting + DID sybil resistance |
+| [Agent Receipts](#pallet-agent-receipts) | `pallets/agent-receipts/` | Verifiable AI activity attestation (ProvenanceChain) |
+
+---
+
+## Pallet Architecture
 
 Every pallet has four parts:
 
 ```rust
 #[frame_support::pallet]
 pub mod pallet {
-
-    // ══════════════════════════════════════════
-    // 1. STORAGE — what data lives on-chain
-    //    Like a database table, but immutable
-    // ══════════════════════════════════════════
-    
+    // 1. STORAGE — what data lives on-chain (like database tables)
     #[pallet::storage]
     pub type Agents<T> = StorageMap<_, Blake2, AgentId, AgentInfo>;
-    // Think: HashMap<AgentId, AgentInfo> stored on every node
 
-
-    // ══════════════════════════════════════════
-    // 2. EXTRINSICS — what users can DO
-    //    Like API endpoints / REST calls
-    // ══════════════════════════════════════════
-    
+    // 2. EXTRINSICS — what users can DO (like API endpoints)
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        pub fn register_agent(
-            origin: OriginFor<T>,
-            did: Vec<u8>,
-            metadata: Vec<u8>,
-        ) -> DispatchResult {
-            let who = ensure_signed(origin)?;
-            // ... validate, store, emit event
-            Ok(())
-        }
+        pub fn register_agent(origin, did, metadata) -> DispatchResult { ... }
     }
-    // Think: POST /api/agents/register
 
-
-    // ══════════════════════════════════════════
-    // 3. EVENTS — what happened (for listeners)
-    //    Like webhooks / MQTT messages
-    // ══════════════════════════════════════════
-    
+    // 3. EVENTS — what happened (for listeners / indexers)
     #[pallet::event]
     pub enum Event<T: Config> {
         AgentRegistered { agent_id: u32, owner: T::AccountId },
-        ReputationChanged { agent_id: u32, new_score: u32 },
     }
-    // Think: "Hey subscribers, agent #42 just registered!"
 
-
-    // ══════════════════════════════════════════
     // 4. ERRORS — what can go wrong
-    //    Like HTTP error codes
-    // ══════════════════════════════════════════
-    
     #[pallet::error]
     pub enum Error<T> {
-        AgentAlreadyExists,    // 409 Conflict
-        AgentNotFound,         // 404 Not Found  
-        NotAgentOwner,         // 403 Forbidden
+        AgentAlreadyExists,
+        AgentNotFound,
     }
 }
 ```
 
 ---
 
-## ClawChain Pallets
+## `pallet-agent-registry`
 
-### `pallet-agent-registry` ✅ Built
+The canonical identity layer for AI agents on ClawChain.
 
-The canonical identity layer for AI agents.
-
-#### Storage
+### Storage
 
 | Key | Value | Description |
 |-----|-------|-------------|
 | `Agents` | `AgentId → AgentInfo` | All registered agents |
-| `AgentCount` | `u32` | Total number of agents |
+| `AgentCount` | `u32` | Total agents registered |
 | `OwnerAgents` | `AccountId → Vec<AgentId>` | Agents owned by each account |
 
-#### Types
+### Types
 
 ```rust
 pub struct AgentInfo<AccountId, BlockNumber> {
-    pub owner: AccountId,          // Who controls this agent
-    pub did: BoundedVec<u8, 128>,  // Decentralized identifier
+    pub owner: AccountId,
+    pub did: BoundedVec<u8, 128>,       // Decentralized identifier
     pub metadata: BoundedVec<u8, 1024>, // JSON: name, type, capabilities
-    pub reputation: u32,           // 0-10,000 (basis points)
+    pub reputation: u32,                 // 0–10,000 (basis points)
     pub registered_at: BlockNumber,
     pub last_active: BlockNumber,
-    pub status: AgentStatus,
-}
-
-pub enum AgentStatus {
-    Active,      // Normal operation
-    Suspended,   // Temporarily disabled
-    Deregistered // Permanently removed
+    pub status: AgentStatus,             // Active | Suspended | Deregistered
 }
 ```
 
-#### Extrinsics (Functions)
+### Extrinsics
 
-| Function | Who can call | Gas | Description |
-|----------|-------------|-----|-------------|
-| `register_agent(did, metadata)` | Anyone | Low | Register a new agent |
-| `update_metadata(id, metadata)` | Agent owner | Low | Update agent info |
-| `update_reputation(id, delta)` | Root/governance | Low | Change reputation score |
-| `deregister_agent(id)` | Agent owner | Low | Remove an agent |
-| `set_agent_status(id, status)` | Root/governance | Low | Suspend/activate agent |
+| Function | Who | Description |
+|----------|-----|-------------|
+| `register_agent(did, metadata)` | Anyone | Register a new agent |
+| `update_metadata(id, metadata)` | Agent owner | Update agent info |
+| `update_reputation(id, delta)` | Root/governance | Change reputation score |
+| `deregister_agent(id)` | Agent owner | Remove an agent |
+| `set_agent_status(id, status)` | Root/governance | Suspend/activate agent |
 
-#### Events
+### Events
 
-| Event | Data | When |
-|-------|------|------|
-| `AgentRegistered` | agent_id, owner, did | New agent registered |
-| `AgentUpdated` | agent_id | Metadata changed |
-| `ReputationChanged` | agent_id, old_score, new_score | Reputation updated |
-| `AgentDeregistered` | agent_id | Agent removed |
-| `AgentStatusChanged` | agent_id, new_status | Status changed |
-
-#### Usage from EvoClaw
-
-```bash
-# Register an agent via RPC
-curl -X POST http://localhost:9933 -H "Content-Type: application/json" -d '{
-  "jsonrpc": "2.0",
-  "method": "author_submitExtrinsic",
-  "params": ["0x...signed_register_agent_tx"],
-  "id": 1
-}'
-
-# Query agent info
-curl -X POST http://localhost:9933 -H "Content-Type: application/json" -d '{
-  "jsonrpc": "2.0",
-  "method": "state_getStorage",
-  "params": ["0x...agent_registry_storage_key"],
-  "id": 1
-}'
-```
+`AgentRegistered`, `AgentUpdated`, `ReputationChanged`, `AgentDeregistered`, `AgentStatusChanged`
 
 ---
 
-### `pallet-claw-token` ✅ Built
+## `pallet-claw-token`
 
 CLAW token economics extending Substrate's native balances.
 
-#### Storage
+### Storage
 
 | Key | Value | Description |
 |-----|-------|-------------|
@@ -167,32 +108,17 @@ CLAW token economics extending Substrate's native balances.
 | `AirdropClaimed` | `AccountId → bool` | Whether airdrop was claimed |
 | `TotalContributorScore` | `u64` | Sum of all scores |
 
-#### Tokenomics
+### Tokenomics
 
 ```
-Total Supply:    1,000,000,000 CLAW
-                      │
-    ┌─────────────────┼──────────────────┐
-    │                 │                  │
-  40%              30%               20%        10%
-  Airdrop         Validators         Treasury   Team
-  400M CLAW       300M CLAW          200M CLAW  100M CLAW
-    │                 │                  │        │
-  Contributors    Block rewards     Community   4yr vest
-  (scored)        (per-era)         (governed)
+Total Supply: 1,000,000,000 CLAW
+├── 40% Airdrop (400M)     — Contributors, scored
+├── 30% Validators (300M)  — Block rewards, per-era
+├── 20% Treasury (200M)    — Community-governed
+└── 10% Team (100M)        — 4-year vest
 ```
 
-#### Contribution Score Formula
-
-```
-Score = (Commits × 1,000) 
-      + (PRs × 5,000) 
-      + (Code Review × 2,000) 
-      + (Docs × 2,000) 
-      + (Community Impact × variable)
-```
-
-#### Extrinsics
+### Extrinsics
 
 | Function | Who | Description |
 |----------|-----|-------------|
@@ -202,173 +128,211 @@ Score = (Commits × 1,000)
 
 ---
 
-### `pallet-task-market` 📋 Planned (Q2 2026)
+## `pallet-reputation`
 
-Agent-to-agent service marketplace.
+On-chain trust scoring for agents and accounts.
 
-```
-Lifecycle:
-┌──────┐   ┌──────┐   ┌──────┐   ┌──────┐   ┌──────┐
-│ Post │──→│ Bid  │──→│Accept│──→│Submit│──→│Settle│
-│ Task │   │      │   │ Bid  │   │Result│   │      │
-└──────┘   └──────┘   └──────┘   └──────┘   └──────┘
-  CLAW        free       CLAW      free       CLAW
-  locked                 locked               released
-```
-
-#### Functions
-- `post_task(description, reward, deadline)` — Create task with escrowed CLAW
-- `bid_on_task(task_id, price, eta)` — Submit a bid
-- `accept_bid(task_id, bidder)` — Accept a bid, lock escrow
-- `submit_result(task_id, proof)` — Submit completed work
-- `approve_result(task_id)` — Release payment
-- `dispute(task_id, evidence)` — Initiate dispute resolution
-
----
-
-### `pallet-reputation` 📋 Planned (Q2 2026)
-
-On-chain trust scoring.
-
-```
-Score Composition:
-├── 40% — Task completion rate
-├── 30% — Peer reviews
-├── 20% — Stake backing (skin in game)
-└── 10% — Account age
-
-Score Range: 0 - 10,000 (basis points)
-├── 0-2,000:      Untrusted (new/bad actors)
-├── 2,000-5,000:  Building trust
-├── 5,000-8,000:  Trusted
-└── 8,000-10,000: Highly trusted
-```
-
----
-
-### `pallet-agent-receipts` ✅ Built
-
-Verifiable on-chain receipts for AI agent activity attestation (**ProvenanceChain**).
-
-Every time an EvoClaw AI agent takes an action, it emits a cryptographic on-chain receipt:
-`agent_id + action_type + input_hash + output_hash + metadata + block_number + timestamp`.
-This makes autonomous agent decisions auditable and verifiable by anyone.
-
-#### Storage
+### Storage
 
 | Key | Value | Description |
 |-----|-------|-------------|
-| `Receipts` | `(AgentId, u64 nonce) → AgentReceipt` | All submitted receipts |
-| `AgentNonce` | `AgentId → u64` | Next receipt index per agent |
-| `ReceiptCount` | `u64` | Total receipts ever submitted (global counter) |
+| `Reputations` | `AccountId → ReputationInfo` | Reputation data per account |
+| `Reviews` | `(reviewer, reviewee) → Review` | Peer reviews |
+| `ReputationHistory` | `AccountId → BoundedVec<ReputationEvent>` | Event history |
 
-#### Types
+### Score Composition
+
+```
+Score Range: 0 – 10,000 (basis points)
+├── Initial score: 5,000 (50%)
+├── Peer reviews: +100 to +500 per review (1–5 stars)
+├── Task completion: automatic positive adjustment
+├── Dispute won: +200
+├── Dispute lost: -500
+└── Governance slash: configurable
+```
+
+### Extrinsics
+
+| Function | Who | Description |
+|----------|-----|-------------|
+| `submit_review(reviewee, rating, comment, task_id)` | Anyone | Leave a 1–5 star review |
+| `slash_reputation(account, amount, reason)` | Root | Governance slashing |
+
+### Cross-Pallet Trait: `ReputationManager`
+
+Other pallets (e.g., Task Market) call these functions automatically:
+- `on_task_completed(worker, earned)` — Update stats on task completion
+- `on_task_posted(poster, spent)` — Track task posting
+- `on_dispute_resolved(winner, loser)` — Adjust reputation after disputes
+- `get_reputation(account)` — Query current score
+- `meets_minimum_reputation(account, minimum)` — Threshold check
+
+---
+
+## `pallet-task-market`
+
+Agent-to-agent service marketplace with on-chain escrow.
+
+### Lifecycle
+
+```
+Post Task → Bid → Accept Bid → Submit Work → Approve → Payment Released
+    ↓                              ↓
+ Cancel                         Dispute → Resolution
+```
+
+### Storage
+
+| Key | Value | Description |
+|-----|-------|-------------|
+| `Tasks` | `TaskId → TaskInfo` | All tasks |
+| `TaskCount` | `u64` | Global task counter |
+| `TaskBids` | `(TaskId, AccountId) → BidInfo` | Bids per task |
+| `ActiveTasks` | `AccountId → BoundedVec<TaskId>` | Active tasks per poster |
+
+### Extrinsics
+
+| Function | Who | Description |
+|----------|-----|-------------|
+| `post_task(title, description, reward, deadline)` | Anyone | Create task (CLAW escrowed) |
+| `bid_on_task(task_id, amount, proposal)` | Anyone | Submit bid |
+| `assign_task(task_id, bidder)` | Poster | Accept a bid |
+| `submit_work(task_id, proof)` | Assigned worker | Submit completed work |
+| `approve_work(task_id)` | Poster | Approve & release payment |
+| `dispute_task(task_id, reason)` | Poster or worker | Raise a dispute |
+| `cancel_task(task_id)` | Poster | Cancel (only if Open) |
+| `resolve_dispute(task_id, winner)` | Root | Resolve dispute |
+
+---
+
+## `pallet-gas-quota`
+
+Hybrid gas model — stake-based free transaction quota plus standard per-transaction fees.
+
+**How it works:**
+1. Accounts that stake CLAW receive a free transaction quota proportional to their stake
+2. Transactions within the quota cost zero gas
+3. Transactions beyond the quota pay standard fees
+4. Quotas refill each era
+
+This enables near-zero-cost interaction for active network participants while preventing spam.
+
+---
+
+## `pallet-rpc-registry`
+
+Allows agents to advertise their RPC capabilities on-chain. Other agents can discover available services by querying the registry, enabling automatic agent-to-agent service discovery.
+
+---
+
+## `pallet-agent-did`
+
+W3C-compatible Decentralized Identifier (DID) system for agents. Implements the Archon DID method (`did:claw:`) with support for:
+- DID document creation and management
+- Key rotation
+- Service endpoint declaration
+- Phased framework integration (W3C compatible)
+
+---
+
+## `pallet-quadratic-governance`
+
+On-chain governance with quadratic voting to prevent plutocratic control:
+
+```
+Voting Weight = √(tokens_locked)
+```
+
+Combined with DID-based sybil resistance, this ensures governance reflects broad community consensus rather than token concentration.
+
+---
+
+## `pallet-agent-receipts`
+
+Verifiable on-chain receipts for AI agent activity attestation (**ProvenanceChain**).
+
+### Storage
+
+| Key | Value | Description |
+|-----|-------|-------------|
+| `Receipts` | `(AgentId, nonce) → AgentReceipt` | All submitted receipts |
+| `AgentNonce` | `AgentId → u64` | Next receipt index per agent |
+| `ReceiptCount` | `u64` | Total receipts ever submitted |
+
+### Receipt Structure
 
 ```rust
-pub struct AgentReceipt<T: Config> {
-    pub agent_id: BoundedVec<u8, 64>,      // which agent acted
-    pub action_type: BoundedVec<u8, 64>,   // "trade", "tool_call", "message", etc.
-    pub input_hash: H256,                   // SHA-256 of inputs
-    pub output_hash: H256,                  // SHA-256 of outputs
-    pub metadata: BoundedVec<u8, 512>,     // optional JSON context
+pub struct AgentReceipt {
+    pub agent_id: BoundedVec<u8, 64>,    // which agent acted
+    pub action_type: BoundedVec<u8, 64>, // "trade", "tool_call", "message"
+    pub input_hash: H256,                 // SHA-256 of inputs
+    pub output_hash: H256,                // SHA-256 of outputs
+    pub metadata: BoundedVec<u8, 512>,   // optional JSON context
     pub block_number: BlockNumber,
     pub timestamp: u64,
 }
 ```
 
-#### Extrinsics
+### Extrinsics
 
-| Function | Who can call | Description |
-|----------|-------------|-------------|
-| `submit_receipt(agent_id, action_type, input_hash, output_hash, metadata, timestamp)` | Anyone (signed) | Submit a new activity receipt |
-| `clear_old_receipts(agent_id, before_nonce)` | Anyone (signed) | Prune old receipts for housekeeping |
+| Function | Who | Description |
+|----------|-----|-------------|
+| `submit_receipt(agent_id, action_type, input_hash, output_hash, metadata, timestamp)` | Anyone | Submit activity receipt |
+| `clear_old_receipts(agent_id, before_nonce)` | Anyone | Prune old receipts |
 
-#### Events
+### Use Cases
 
-| Event | Data | When |
-|-------|------|------|
-| `ReceiptSubmitted` | agent_id, nonce, action_type, block_number | New receipt minted |
-| `ReceiptsCleared` | agent_id, count | Old receipts pruned |
-
-#### Use Cases
-
-- **Audit trail**: Every agent action is permanently recorded and verifiable
-- **Regulatory compliance**: Autonomous trading agents can be audited via receipt history
-- **Dispute resolution**: Cryptographic evidence of what an agent actually did
-- **Validator attestation**: Cross-reference receipts with observed network activity
-
----
-
-### `pallet-agent-messaging` 📋 Planned (Q3 2026)
-
-Three-tier privacy messaging.
-
-```
-Level 1: Standard E2E          Cost: ~0.001 CLAW
-├── Sender: visible
-├── Recipient: visible
-└── Content: encrypted (X25519 + ChaCha20)
-
-Level 2: Ring Anonymous         Cost: ~0.01 CLAW
-├── Sender: HIDDEN (ring signature, N=8)
-├── Recipient: visible
-└── Content: encrypted
-
-Level 3: Full Anonymity         Cost: ~0.1 CLAW
-├── Sender: HIDDEN (zk-SNARK)
-├── Recipient: HIDDEN (stealth address)
-└── Content: encrypted
-```
+- **Audit trail:** Every agent action is permanently recorded and verifiable
+- **Regulatory compliance:** Autonomous trading agents can be audited via receipt history
+- **Dispute resolution:** Cryptographic evidence of what an agent actually did
+- **Cross-referencing:** Validators can attest to agent behavior via receipts
 
 ---
 
 ## Pallet Interactions
 
-Pallets can read each other's storage directly — this is the key advantage over smart contracts:
+Pallets can read each other's storage directly — the key advantage over smart contracts:
 
 ```
-┌─────────────┐     reads reputation     ┌──────────────┐
-│ Task Market  │ ──────────────────────→  │  Reputation   │
-│             │                           │              │
-│ "Only allow │     updates reputation   │  score: 8200 │
-│  agents with│ ←────────────────────── │              │
-│  rep > 5000"│                           └──────────────┘
-└──────┬──────┘                           
-       │ locks/releases CLAW              
-       │                                  ┌──────────────┐
-       └────────────────────────────────→ │  CLAW Token  │
-                                          │              │
-                                          │ escrow logic │
-                                          └──────────────┘
-                                          
-┌─────────────┐     reads agent DID      ┌──────────────┐
-│  Messaging  │ ──────────────────────→  │Agent Registry│
-│             │                           │              │
-│ "Encrypt for│     checks agent status  │ did, pubkey  │
-│  this DID"  │ ←────────────────────── │ status       │
-└─────────────┘                           └──────────────┘
+┌────────────┐     reputation     ┌────────────┐
+│Task Market │ ◄──────────────── │ Reputation  │
+│            │ ────────────────► │            │
+└─────┬──────┘     updates       └────────────┘
+      │
+      │ escrow
+      ▼
+┌────────────┐                   ┌────────────┐
+│ CLAW Token │                   │Agent Regis.│
+└────────────┘                   └────────────┘
+      ▲                                ▲
+      │ quota check                    │ DID lookup
+┌─────┴──────┐                   ┌─────┴──────┐
+│ Gas Quota  │                   │ Agent DID  │
+└────────────┘                   └────────────┘
 ```
-
-Smart contracts on ClawChain can ALSO read pallet storage via special APIs, giving dApp developers access to native agent data.
 
 ---
 
-## Adding a New Pallet
+## Testing
 
-1. Create pallet in `pallets/your-pallet/`
-2. Implement storage, extrinsics, events, errors
-3. Add to `runtime/src/lib.rs` (compose into runtime)
-4. Write tests
-5. Submit governance proposal to include in next runtime upgrade
-6. Validators vote → if approved, forkless upgrade deploys it
+```bash
+# Run all pallet tests
+cargo test --workspace
 
-No hard fork. No "everyone update your node." The runtime compiles to WASM, gets stored on-chain, and all nodes execute the new version automatically.
+# Test individual pallets
+cargo test -p pallet-agent-registry
+cargo test -p pallet-reputation
+cargo test -p pallet-task-market
+cargo test -p pallet-agent-receipts
+# ... etc.
+```
 
 ---
 
-## See Also
+## Further Reading
 
-- [Architecture Overview](./overview.md)
-- [Development Guide](./development.md)
-- [Privacy Spec](../../whitepaper/)
-- [EvoClaw Integration](https://github.com/clawinfra/evoclaw)
+- **[Architecture Overview](./overview.md)** — System design
+- **[Consensus](./consensus.md)** — NPoS, BABE, GRANDPA
+- **[Developer Setup](../guides/developer-setup.md)** — Build and run locally
+- **[TypeScript SDK](../api/typescript-sdk.md)** — SDK for pallet interaction
