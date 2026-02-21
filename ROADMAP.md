@@ -181,21 +181,11 @@ Full ADR details: [Issue #24](https://github.com/clawinfra/claw-chain/issues/24#
 
 ---
 
-## 🛡️ Security Philosophy — Agent-Native Auditing
+## 🛡️ Security Philosophy
 
-ClawChain is not a traditional blockchain. It is a chain **for agents, trusted by agents** — not designed for CEX listings, institutional LPs, or human credibility signals. This changes the security model fundamentally.
+ClawChain is not a traditional blockchain — it is a chain **for agents, trusted by agents**. Its security model reflects that.
 
-### Why We Don't Use Traditional Third-Party Audits
-
-Traditional blockchain audits (Trail of Bits, Zellic, Sec3) exist to produce a **trust signal for humans**: investors, exchanges, and ecosystem funds who need a one-time credibility checkbox. That model has three problems:
-
-1. **Point-in-time** — A 2025 audit doesn't catch a vulnerability introduced in a 2026 runtime upgrade
-2. **Wrong audience** — EvoClaw agents don't read PDF reports; they interact with on-chain state
-3. **Self-defeating** — Paying external firms to audit a system designed to autonomously verify itself undermines the protocol's core thesis
-
-### Our Approach: Continuous Agent-Driven Auditing
-
-We eat our own dogfood. ClawChain's security is verified by **ClawChain itself**, using the same agent infrastructure the protocol is designed to power:
+Rather than point-in-time third-party audits (which produce trust signals for humans and are stale the moment a runtime upgrade ships), ClawChain uses **continuous agent-driven auditing**:
 
 ```
 ClawChain pallets → shield-agent (SubstrateScanner)
@@ -204,37 +194,18 @@ ClawChain pallets → shield-agent (SubstrateScanner)
                             ↓
                pallet-agent-receipts (on-chain attestation)
                             ↓
-                   Immutable audit trail on ClawChain
+                   Immutable, queryable audit trail
 ```
 
-Every runtime upgrade triggers a new shield-agent scan. Every scan result is attested on-chain. Any agent or developer can query the full audit history via RPC — **more transparent than a PDF, and continuous instead of point-in-time**.
+| Gate | Requirement |
+|------|-------------|
+| **Per-PR** | No new CRITICAL/HIGH findings (shield-agent CI) |
+| **Per-runtime-upgrade** | Full pallet re-scan before `setCode` |
+| **Pre-mainnet** | Zero CRITICAL/HIGH across all pallets |
+| **Ongoing** | Weekly attestation on-chain via EvoClaw cron |
 
-### Security Gates (Replacing the Audit Requirement)
-
-| Gate | Requirement | Tool |
-|------|-------------|------|
-| **Per-PR** | No new CRITICAL/HIGH findings introduced | shield-agent in GitHub CI |
-| **Per-runtime-upgrade** | Full pallet re-scan before `setCode` | shield-agent SubstrateScanner |
-| **Pre-mainnet** | Zero CRITICAL, zero HIGH across all pallets | shield-agent ChainAuditReport |
-| **Ongoing** | Weekly full audit attestation on-chain | Scheduled cron via EvoClaw |
-
-### Vulnerability Categories Checked
-
-- `missing_weight` — calls with `Weight::zero()` or no weight annotation (DoS vector)
-- `unsafe_arithmetic` — `unwrap()`, `expect()`, explicit `panic!()`, unsafe numeric casts
-- `unsigned_transaction_abuse` — `ValidateUnsigned` without strict validation
-- `storage_without_deposit` — unbounded storage maps (state bloat vector)
-- `access_control` — `ensure_none`, `ensure_root` misuse, custom origin misconfiguration
-- `missing_benchmarks` — pallets with no `runtime-benchmarks` feature (inaccurate weights)
-
-### On-Chain Audit Trail
-
-All audit results are stored on-chain via `pallet-agent-receipts`. The audit trail is:
-- **Immutable** — recorded on ClawChain, tamper-evident
-- **Queryable** — any agent can fetch audit history via RPC
-- **Continuous** — updated on every runtime upgrade, not just at launch
-
-This is the proof that ClawChain works: its own security is verified by the protocol it provides.
+**Full technical specification:** [`docs/architecture/security.md`](docs/architecture/security.md)  
+Covers: threat model, SubstrateScanner internals, attestation flow, per-vulnerability-category mechanics, CI gate YAML, pre-mainnet checklist, and future work (formal verification, fuzzing).
 
 ---
 
