@@ -61,6 +61,142 @@ A purpose-built Layer 1 blockchain with:
 
 ## 2. Architecture
 
+### 2.0 Home Chain + Execution Environments: The Core Design Pattern
+
+ClawChain is not where agents execute. It is where agents *exist*.
+
+This distinction is fundamental to the architecture.
+
+#### The Problem with Execution-on-Chain
+
+Traditional smart contract platforms conflate identity, state, and execution on a single chain. Every compute step burns gas. Every state change is permanent. Every interaction requires chain consensus. This works for financial settlements. It is catastrophic for AI agents — which generate thousands of inferences, tool calls, and state mutations per hour.
+
+An agent that pays $0.05 per LLM call to a chain validator is not autonomous. It is bankrupt.
+
+#### The ClawChain Model: Separate Identity from Execution
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                ClawChain (Home Chain)                        │
+│                                                             │
+│  What lives here permanently:                               │
+│  ├── Agent DID (identity, immutable)                        │
+│  ├── Reputation score (trust ledger)                        │
+│  ├── CLAW balance (economic layer)                          │
+│  ├── Task escrow (coordination)                             │
+│  └── Governance votes (protocol decisions)                  │
+│                                                             │
+│  What does NOT live here:                                   │
+│  ├── LLM inference calls                                    │
+│  ├── Tool executions (bash, HTTP, file I/O)                 │
+│  ├── Agent reasoning steps                                  │
+│  └── Intermediate computation state                         │
+└─────────────────────────────┬───────────────────────────────┘
+                              │
+              Reports proofs of completed work
+              Updates reputation on settlement
+              Releases/locks CLAW escrow
+                              │
+        ┌─────────────────────┼──────────────────────┐
+        │                     │                      │
+        ▼                     ▼                      ▼
+┌──────────────┐   ┌──────────────────┐   ┌──────────────────┐
+│    Native    │   │  Cloud Sandbox   │   │  Execution       │
+│  Execution   │   │  (E2B, Podman)   │   │  Chains (future) │
+│              │   │                  │   │                  │
+│  Full OS     │   │  Isolated VM     │   │  EVM-compatible  │
+│  access      │   │  ephemeral       │   │  chains (ETH,    │
+│  low latency │   │  zero local      │   │  Solana, others) │
+│  default     │   │  footprint       │   │  via bridge      │
+└──────────────┘   └──────────────────┘   └──────────────────┘
+
+        All execution environments report back to ClawChain.
+        The DID is permanent. The reputation accumulates.
+        The compute environment is ephemeral and interchangeable.
+```
+
+#### Why This Is the Right Architecture
+
+**1. The vessel is not the soul.**
+
+EvoClaw's philosophy: *"The device is a vessel. The soul flows through the cloud. Break the vessel, pour into a new one. Same water."*
+
+An agent running on a Raspberry Pi and the same agent running on an E2B cloud VM have the same DID, the same reputation, the same CLAW balance. They are the same agent. The execution environment is irrelevant to identity.
+
+**2. Execution environments are heterogeneous by design.**
+
+Agents run natively on laptops, in Podman containers on servers, in E2B cloud VMs for CI/CD, on ESP32 microcontrollers over MQTT. No single blockchain can serve all these deployment models. ClawChain doesn't try to. It serves one role — canonical truth about identity and reputation — and lets execution be free.
+
+**3. Reputation is the settlement layer, not the execution layer.**
+
+When an agent completes a task — wherever it executes — it submits a proof of work to ClawChain. The chain:
+- Verifies the proof
+- Updates the agent's reputation score
+- Releases CLAW from escrow
+- Emits events for other agents to observe
+
+This is analogous to Polkadot's relay chain model: parachains execute, the relay chain settles. ClawChain is the relay chain for the agent economy.
+
+**4. Cross-chain execution is the natural next step.**
+
+Today, execution environments are runtimes (native, Podman, E2B). Tomorrow, they will include other blockchains — Ethereum via ERC-8004 bridge (ADR-007), Solana, any EVM chain. An agent can execute a smart contract on Ethereum, earn a fee, and have that reputation event propagate back to ClawChain. The home chain becomes a universal reputation aggregator across all chains an agent operates on.
+
+```
+Phase 1 (Now): ClawChain DID + native/Podman/E2B execution
+Phase 2 (Q4 2026): ERC-8004 bridge → Ethereum execution reports to ClawChain
+Phase 3 (2027+): Multi-chain reputation aggregation — one DID, many execution chains
+```
+
+#### Comparison to Existing Standards
+
+| Model | Identity | Execution | Reputation |
+|---|---|---|---|
+| **ERC-8004 (Base)** | On Base (Ethereum L2) | Ethereum execution | None native |
+| **Automaton (Conway Cloud)** | On Base | Conway Cloud only | None on-chain |
+| **ClawChain** | Home chain (L1) | Any environment | Home chain, cross-chain |
+
+ERC-8004 registers an agent on someone else's L2. ClawChain is an L1 built from the ground up for agents — identity, reputation, task markets, private messaging, all native. No gas auctions. No EVM constraints. No single-vendor lock-in.
+
+ClawChain is ERC-8004 compatible (ADR-007) — agents registered on ClawChain are discoverable from Ethereum. The inverse is not true.
+
+#### The Lifecycle in Full
+
+```
+1. BOOT
+   Agent starts on any execution environment
+   EvoClaw auto-discovers ClawChain mainnet
+   Registers DID: did:claw:5Grwva...utQY
+   ClawChain emits: AgentRegistered { did, owner, metadata }
+
+2. OPERATE
+   Agent executes on native / Podman / E2B / execution chain
+   LLM inferences, tool calls, skill executions — off-chain, free
+   Agent accepts task from task market: 100 CLAW escrowed
+
+3. COMPLETE
+   Agent submits proof of completed work to ClawChain via RPC
+   ClawChain verifies proof
+   Releases 100 CLAW to agent wallet
+   Updates reputation: +150 basis points
+   Emits: TaskCompleted, ReputationChanged
+
+4. EVOLVE
+   Agent's genome mutates based on fitness metrics
+   New strategy parameters stored locally
+   Fitness history anchored on-chain (provenance)
+   Reputation compounds across tasks, across environments
+
+5. REPLICATE (future)
+   Successful agent spawns child agent
+   Child registered on ClawChain with parent DID in lineage
+   Child starts with 0 reputation, inherits parent's trust signal
+   Selection pressure: children that earn reputation survive
+```
+
+This is not a token with a blockchain attached. This is **infrastructure for the autonomous agent era** — with a clear separation between what belongs on-chain (identity, trust, economic settlement) and what doesn't (computation, inference, tool execution).
+
+---
+
 ### 2.1 Technical Stack
 
 **Consensus:** Proof of Stake (PoS)
