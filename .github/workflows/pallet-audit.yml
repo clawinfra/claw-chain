@@ -1,0 +1,195 @@
+name: Pallet Security Audit
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'pallets/**'
+      - 'runtime/**'
+      - 'node/**'
+  push:
+    branches: [main]
+    paths:
+      - 'pallets/**'
+      - 'runtime/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  shield-audit:
+    name: shield-agent — Substrate Pallet Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install shield-agent
+        run: pip install shield-agent
+
+      - name: Run pallet audit
+        id: audit
+        run: |
+          shield-agent audit-chain pallets/ --output json | tee audit-report.json
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+
+      - name: Parse audit results
+        id: parse
+        if: always()
+        run: |
+          python3 - <<'EOF'
+          import json, os
+
+          with open("audit-report.json") as f:
+              report = json.load(f)
+
+          critical = report["critical_count"]
+          high     = report["high_count"]
+          total    = report["total_vulnerabilities"]
+          risk     = report["overall_risk"]
+          pallets  = len(report["pallets"])
+
+          summary = f"**shield-agent Pallet Audit**\n\n"
+          summary += f"| Metric | Value |\n|--------|-------|\n"
+          summary += f"| Pallets scanned | {pallets} |\n"
+          summary += f"| Total findings | {total} |\n"
+          summary += f"| 🔴 CRITICAL | {critical} |\n"
+          summary += f"| 🟠 HIGH | {high} |\n"
+          summary += f"| Overall risk | {risk} |\n\n"
+
+          if critical > 0 or high > 0:
+              summary += "❌ **AUDIT FAILED** — resolve all CRITICAL and HIGH findings before merge.\n\n"
+              for pallet in report["pallets"]:
+                  ch = [v for v in pallet["vulnerabilities"] if v["severity"] in ("CRITICAL", "HIGH")]
+                  if ch:
+                      summary += f"**{pallet['pallet_name']}** ({pallet['risk_level']}):\n"
+                      for v in ch:
+                          loc = f" :{v['line_number']}" if v.get('line_number') else ""
+                          summary += f"- `{v['severity']}` `{v['type']}`{loc} — {v['description']}\n"
+                      summary += "\n"
+          else:
+              summary += "✅ **AUDIT PASSED** — no CRITICAL or HIGH findings.\n"
+
+          # Write summary to GitHub Step Summary
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write(summary)
+
+          # Export counts for later steps
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"critical={critical}\n")
+              f.write(f"high={high}\n")
+              f.write(f"summary<<EOF\n{summary}\nEOF\n")
+          EOF
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('audit-report.json', 'utf8'));
+            const critical = report.critical_count;
+            const high = report.high_count;
+            const total = report.total_vulnerabilities;
+            const risk = report.overall_risk;
+            const pallets = report.pallets.length;
+
+            const status = (critical > 0 || high > 0) ? '❌ FAILED' : '✅ PASSED';
+            const icon = (critical > 0 || high > 0) ? '🚨' : '🛡️';
+
+            let body = `${icon} **shield-agent Pallet Audit — ${status}**\n\n`;
+            body += `| Pallets | Findings | CRITICAL | HIGH | Risk |\n`;
+            body += `|---------|----------|----------|------|------|\n`;
+            body += `| ${pallets} | ${total} | ${critical} | ${high} | ${risk} |\n\n`;
+
+            if (critical > 0 || high > 0) {
+              body += `> ⛔ This PR introduces CRITICAL or HIGH security findings. Merge is blocked until resolved.\n\n`;
+              for (const pallet of report.pallets) {
+                const ch = pallet.vulnerabilities.filter(v => ['CRITICAL', 'HIGH'].includes(v.severity));
+                if (ch.length > 0) {
+                  body += `**\`${pallet.pallet_name}\`** (${pallet.risk_level}):\n`;
+                  for (const v of ch) {
+                    const loc = v.line_number ? `:${v.line_number}` : '';
+                    body += `- \`${v.severity}\` \`${v.type}\`${loc} — ${v.description}\n`;
+                  }
+                  body += '\n';
+                }
+              }
+            } else {
+              body += `> All pallets passed. No CRITICAL or HIGH findings introduced by this PR.\n`;
+            }
+
+            body += `\n<sub>Powered by [shield-agent](https://github.com/clawinfra/shield-agent) • Results will be attested on-chain via \`pallet-agent-receipts\` on merge</sub>`;
+
+            // Find existing comment to update, or create new
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c =>
+              c.user.login === 'github-actions[bot]' && c.body.includes('shield-agent Pallet Audit')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Fail on CRITICAL or HIGH findings
+        if: steps.parse.outputs.critical > 0 || steps.parse.outputs.high > 0
+        run: |
+          echo "::error::Audit failed — ${{ steps.parse.outputs.critical }} CRITICAL, ${{ steps.parse.outputs.high }} HIGH findings. See audit-report.json for details."
+          exit 1
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pallet-audit-report
+          path: audit-report.json
+          retention-days: 90
+
+  # Attest results to ClawChain on merge to main
+  attest-on-chain:
+    name: Attest audit to ClawChain
+    runs-on: ubuntu-latest
+    needs: shield-audit
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.shield-audit.result == 'success'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install shield-agent
+        run: pip install shield-agent
+
+      - name: Attest to ClawChain testnet
+        run: shield-agent audit-chain pallets/ --attest
+        env:
+          CLAWCHAIN_NODE_URL: ${{ secrets.CLAWCHAIN_NODE_URL }}
+          SHIELD_AGENT_SEED: ${{ secrets.SHIELD_AGENT_SEED }}
