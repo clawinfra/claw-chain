@@ -4,7 +4,7 @@ use crate as pallet_rpc_registry;
 use crate::pallet::{ActiveNodes, NodeCount, NodeStatus, NodeType, OwnerNodes, RpcNodes};
 use frame_support::{
     assert_noop, assert_ok, derive_impl,
-    traits::{ConstU32, ConstU64},
+    traits::ConstU32,
 };
 use sp_runtime::{traits::IdentityLookup, BuildStorage};
 
@@ -32,7 +32,7 @@ impl pallet_rpc_registry::Config for Test {
     type MaxRegionLength = ConstU32<32>;
     type MaxNodesPerOwner = ConstU32<10>;
     type MaxActiveNodes = ConstU32<1000>;
-    type MaxHeartbeatInterval = ConstU64<300>;
+    type MaxHeartbeatInterval = ConstU32<300>;
 }
 
 // Build test externalities from genesis storage.

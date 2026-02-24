@@ -4,7 +4,7 @@ use crate::{self as pallet_gas_quota, AgentQuotas};
 use frame_support::{
     assert_noop, assert_ok,
     parameter_types,
-    traits::{ConstU32, ConstU64},
+    traits::ConstU32,
 };
 use sp_core::H256;
 use sp_runtime::{
@@ -51,6 +51,13 @@ impl frame_system::Config for Test {
     type SS58Prefix = ();
     type OnSetCode = ();
     type MaxConsumers = ConstU32<16>;
+    type SingleBlockMigrations = ();
+    type MultiBlockMigrator = ();
+    type PreInherents = ();
+    type PostInherents = ();
+    type PostTransactions = ();
+    type RuntimeTask = ();
+    type ExtensionsWeightInfo = ();
 }
 
 impl pallet_balances::Config for Test {
@@ -65,8 +72,9 @@ impl pallet_balances::Config for Test {
     type WeightInfo = ();
     type FreezeIdentifier = ();
     type MaxFreezes = ();
-    type RuntimeHold = ();
+    type RuntimeHoldReason = ();
     type RuntimeFreezeReason = ();
+    type DoneSlashHandler = ();
 }
 
 parameter_types! {
@@ -99,8 +107,9 @@ fn new_test_ext() -> sp_io::TestExternalities {
             (1, 10_000_000_000), // 10,000 $CLAW — unlimited tier
             (2, 1_000_000_000),  // 1,000 $CLAW
             (3, 100_000_000),    // 100 $CLAW
-            (4, 1_000),          // dust — minimum tier
+            (4, 5_000),          // dust — minimum tier (needs > ExistentialDeposit + BaseFeePerTx)
         ],
+        dev_accounts: None,
     }
     .assimilate_storage(&mut t)
     .unwrap();

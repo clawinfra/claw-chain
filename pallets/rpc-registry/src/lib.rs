@@ -444,6 +444,8 @@ use sp_runtime::traits::Saturating;
                     Error::<T>::NodeStillActive
                 );
 
+                node.status = NodeStatus::Inactive;
+
                 Ok(())
             })?;
 
