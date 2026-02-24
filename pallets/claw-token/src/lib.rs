@@ -98,15 +98,9 @@ pub mod pallet {
             total_score: u64,
         },
         /// An airdrop was claimed.
-        AirdropClaimed {
-            who: T::AccountId,
-            amount: u128,
-        },
+        AirdropClaimed { who: T::AccountId, amount: u128 },
         /// Treasury funds were spent.
-        TreasurySpend {
-            to: T::AccountId,
-            amount: u128,
-        },
+        TreasurySpend { to: T::AccountId, amount: u128 },
     }
 
     // ========== Errors ==========
@@ -187,10 +181,7 @@ pub mod pallet {
             let who = ensure_signed(origin)?;
 
             // Check not already claimed
-            ensure!(
-                !AirdropClaimed::<T>::get(&who),
-                Error::<T>::AlreadyClaimed
-            );
+            ensure!(!AirdropClaimed::<T>::get(&who), Error::<T>::AlreadyClaimed);
 
             // Check contribution score exists
             let score = ContributorScores::<T>::get(&who);

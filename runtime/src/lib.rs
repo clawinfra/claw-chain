@@ -15,11 +15,14 @@ extern crate alloc;
 
 use alloc::{vec, vec::Vec};
 // codec and scale_info used by FRAME macros
+use frame_election_provider_support::{
+    bounds::ElectionBoundsBuilder, onchain, SequentialPhragmen, VoteWeight,
+};
 use frame_support::{
     derive_impl,
     genesis_builder_helper::{build_state, get_preset},
     parameter_types,
-    traits::{ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, tokens::PayFromAccount},
+    traits::{tokens::PayFromAccount, ConstBool, ConstU128, ConstU32, ConstU64, ConstU8},
     weights::{
         constants::{
             BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND,
@@ -27,9 +30,6 @@ use frame_support::{
         IdentityFee, Weight,
     },
     PalletId,
-};
-use frame_election_provider_support::{
-    bounds::ElectionBoundsBuilder, onchain, SequentialPhragmen, VoteWeight,
 };
 use frame_system::limits::{BlockLength, BlockWeights};
 use pallet_grandpa::{
@@ -40,8 +40,13 @@ use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
-    create_runtime_str, curve::PiecewiseLinear, generic, impl_opaque_keys,
-    traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, OpaqueKeys, Verify, AccountIdConversion},
+    create_runtime_str,
+    curve::PiecewiseLinear,
+    generic, impl_opaque_keys,
+    traits::{
+        AccountIdConversion, BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, OpaqueKeys,
+        Verify,
+    },
     transaction_validity::{TransactionSource, TransactionValidity},
     ApplyExtrinsicResult, MultiSignature, Permill,
 };
@@ -473,7 +478,7 @@ parameter_types! {
     pub const InitialReputation: u32 = 5000;
     pub const MaxReputationDelta: u32 = 500;
     pub const MaxHistoryLength: u32 = 100;
-    
+
     // Task Market parameters
     pub const TaskMarketPalletId: PalletId = PalletId(*b"taskmark");
     pub const MaxTitleLength: u32 = 128;
@@ -507,7 +512,6 @@ impl pallet_task_market::Config for Runtime {
     type MinTaskReward = MinTaskReward;
     type MaxActiveTasksPerAccount = MaxActiveTasksPerAccount;
 }
-
 
 /// Configure the RPC registry pallet.
 impl pallet_rpc_registry::Config for Runtime {
@@ -590,7 +594,7 @@ frame_support::construct_runtime!(
         Grandpa: pallet_grandpa,
         Balances: pallet_balances,
         TransactionPayment: pallet_transaction_payment,
-        
+
         // Staking & Governance
         Authorship: pallet_authorship,
         Session: pallet_session,

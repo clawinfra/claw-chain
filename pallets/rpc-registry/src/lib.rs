@@ -33,17 +33,24 @@ use alloc::vec::Vec;
 
 #[frame_support::pallet]
 pub mod pallet {
-use sp_runtime::traits::Saturating;
     use super::*;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
+    use sp_runtime::traits::Saturating;
 
     /// Type alias for RPC node IDs (sequential u64).
     pub type RpcNodeId = u64;
 
     /// Node type enum.
     #[derive(
-        Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen,
+        Clone,
+        Encode,
+        Decode,
+        Eq,
+        PartialEq,
+        RuntimeDebug,
+        TypeInfo,
+        MaxEncodedLen,
         codec::DecodeWithMemTracking,
     )]
     pub enum NodeType {
@@ -65,7 +72,14 @@ use sp_runtime::traits::Saturating;
 
     /// Node status enum.
     #[derive(
-        Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen,
+        Clone,
+        Encode,
+        Decode,
+        Eq,
+        PartialEq,
+        RuntimeDebug,
+        TypeInfo,
+        MaxEncodedLen,
         codec::DecodeWithMemTracking,
     )]
     pub enum NodeStatus {
@@ -183,10 +197,7 @@ use sp_runtime::traits::Saturating;
             region: Vec<u8>,
         },
         /// An RPC node's info was updated.
-        NodeUpdated {
-            node_id: RpcNodeId,
-            url: Vec<u8>,
-        },
+        NodeUpdated { node_id: RpcNodeId, url: Vec<u8> },
         /// An RPC node sent a heartbeat.
         Heartbeat {
             node_id: RpcNodeId,
@@ -252,8 +263,10 @@ use sp_runtime::traits::Saturating;
 
             let bounded_url: BoundedVec<u8, T::MaxUrlLength> =
                 url.clone().try_into().map_err(|_| Error::<T>::UrlTooLong)?;
-            let bounded_region: BoundedVec<u8, T::MaxRegionLength> =
-                region.clone().try_into().map_err(|_| Error::<T>::RegionTooLong)?;
+            let bounded_region: BoundedVec<u8, T::MaxRegionLength> = region
+                .clone()
+                .try_into()
+                .map_err(|_| Error::<T>::RegionTooLong)?;
 
             let node_id = NodeCount::<T>::get();
             let current_block = <frame_system::Pallet<T>>::block_number();

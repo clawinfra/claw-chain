@@ -203,11 +203,23 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        DIDRegistered { controller: T::AccountId },
-        DIDUpdated { controller: T::AccountId },
-        DIDDeactivated { controller: T::AccountId },
-        ServiceEndpointAdded { controller: T::AccountId, endpoint_id: Vec<u8> },
-        ServiceEndpointRemoved { controller: T::AccountId, endpoint_id: Vec<u8> },
+        DIDRegistered {
+            controller: T::AccountId,
+        },
+        DIDUpdated {
+            controller: T::AccountId,
+        },
+        DIDDeactivated {
+            controller: T::AccountId,
+        },
+        ServiceEndpointAdded {
+            controller: T::AccountId,
+            endpoint_id: Vec<u8>,
+        },
+        ServiceEndpointRemoved {
+            controller: T::AccountId,
+            endpoint_id: Vec<u8>,
+        },
     }
 
     // =========================================================
@@ -246,21 +258,27 @@ pub mod pallet {
         #[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().reads_writes(1, 2))]
         pub fn register_did(origin: OriginFor<T>, context: Vec<u8>) -> DispatchResult {
             let who = ensure_signed(origin)?;
-            ensure!(!DIDDocuments::<T>::contains_key(&who), Error::<T>::DIDAlreadyExists);
+            ensure!(
+                !DIDDocuments::<T>::contains_key(&who),
+                Error::<T>::DIDAlreadyExists
+            );
 
             let bounded_context: BoundedVec<u8, T::MaxContextLength> =
                 context.try_into().map_err(|_| Error::<T>::ContextTooLong)?;
             let now = <frame_system::Pallet<T>>::block_number();
 
-            DIDDocuments::<T>::insert(&who, DIDDocument::<T> {
-                controller: who.clone(),
-                context: bounded_context,
-                created: now,
-                updated: now,
-                deactivated: false,
-                service_endpoint_count: 0,
-                verification_method_count: 0,
-            });
+            DIDDocuments::<T>::insert(
+                &who,
+                DIDDocument::<T> {
+                    controller: who.clone(),
+                    context: bounded_context,
+                    created: now,
+                    updated: now,
+                    deactivated: false,
+                    service_endpoint_count: 0,
+                    verification_method_count: 0,
+                },
+            );
             DIDCount::<T>::mutate(|n| *n = n.saturating_add(1));
             Self::deposit_event(Event::DIDRegistered { controller: who });
             Ok(())
@@ -311,12 +329,16 @@ pub mod pallet {
             endpoint: Vec<u8>,
         ) -> DispatchResult {
             let who = ensure_signed(origin)?;
-            let bounded_id: BoundedVec<u8, T::MaxServiceIdLength> =
-                id.clone().try_into().map_err(|_| Error::<T>::ServiceIdTooLong)?;
-            let bounded_type: BoundedVec<u8, T::MaxServiceTypeLength> =
-                service_type.try_into().map_err(|_| Error::<T>::ServiceTypeTooLong)?;
-            let bounded_ep: BoundedVec<u8, T::MaxEndpointLength> =
-                endpoint.try_into().map_err(|_| Error::<T>::EndpointTooLong)?;
+            let bounded_id: BoundedVec<u8, T::MaxServiceIdLength> = id
+                .clone()
+                .try_into()
+                .map_err(|_| Error::<T>::ServiceIdTooLong)?;
+            let bounded_type: BoundedVec<u8, T::MaxServiceTypeLength> = service_type
+                .try_into()
+                .map_err(|_| Error::<T>::ServiceTypeTooLong)?;
+            let bounded_ep: BoundedVec<u8, T::MaxEndpointLength> = endpoint
+                .try_into()
+                .map_err(|_| Error::<T>::EndpointTooLong)?;
 
             DIDDocuments::<T>::try_mutate(&who, |maybe_doc| -> DispatchResult {
                 let doc = maybe_doc.as_mut().ok_or(Error::<T>::DIDNotFound)?;
@@ -330,16 +352,23 @@ pub mod pallet {
                     !ServiceEndpoints::<T>::contains_key(&who, &bounded_id),
                     Error::<T>::ServiceEndpointAlreadyExists
                 );
-                ServiceEndpoints::<T>::insert(&who, &bounded_id, ServiceEndpoint::<T> {
-                    id: bounded_id.clone(),
-                    service_type: bounded_type,
-                    endpoint: bounded_ep,
-                });
+                ServiceEndpoints::<T>::insert(
+                    &who,
+                    &bounded_id,
+                    ServiceEndpoint::<T> {
+                        id: bounded_id.clone(),
+                        service_type: bounded_type,
+                        endpoint: bounded_ep,
+                    },
+                );
                 doc.service_endpoint_count = doc.service_endpoint_count.saturating_add(1);
                 doc.updated = <frame_system::Pallet<T>>::block_number();
                 Ok(())
             })?;
-            Self::deposit_event(Event::ServiceEndpointAdded { controller: who, endpoint_id: id });
+            Self::deposit_event(Event::ServiceEndpointAdded {
+                controller: who,
+                endpoint_id: id,
+            });
             Ok(())
         }
 
@@ -348,8 +377,10 @@ pub mod pallet {
         #[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().reads_writes(2, 2))]
         pub fn remove_service_endpoint(origin: OriginFor<T>, id: Vec<u8>) -> DispatchResult {
             let who = ensure_signed(origin)?;
-            let bounded_id: BoundedVec<u8, T::MaxServiceIdLength> =
-                id.clone().try_into().map_err(|_| Error::<T>::ServiceIdTooLong)?;
+            let bounded_id: BoundedVec<u8, T::MaxServiceIdLength> = id
+                .clone()
+                .try_into()
+                .map_err(|_| Error::<T>::ServiceIdTooLong)?;
 
             DIDDocuments::<T>::try_mutate(&who, |maybe_doc| -> DispatchResult {
                 let doc = maybe_doc.as_mut().ok_or(Error::<T>::DIDNotFound)?;
@@ -364,7 +395,10 @@ pub mod pallet {
                 doc.updated = <frame_system::Pallet<T>>::block_number();
                 Ok(())
             })?;
-            Self::deposit_event(Event::ServiceEndpointRemoved { controller: who, endpoint_id: id });
+            Self::deposit_event(Event::ServiceEndpointRemoved {
+                controller: who,
+                endpoint_id: id,
+            });
             Ok(())
         }
     }
@@ -382,10 +416,20 @@ pub mod pallet {
     }
 
     impl WeightInfo for () {
-        fn register_did() -> Weight { Weight::from_parts(10_000, 0) }
-        fn update_did() -> Weight { Weight::from_parts(10_000, 0) }
-        fn deactivate_did() -> Weight { Weight::from_parts(10_000, 0) }
-        fn add_service_endpoint() -> Weight { Weight::from_parts(10_000, 0) }
-        fn remove_service_endpoint() -> Weight { Weight::from_parts(10_000, 0) }
+        fn register_did() -> Weight {
+            Weight::from_parts(10_000, 0)
+        }
+        fn update_did() -> Weight {
+            Weight::from_parts(10_000, 0)
+        }
+        fn deactivate_did() -> Weight {
+            Weight::from_parts(10_000, 0)
+        }
+        fn add_service_endpoint() -> Weight {
+            Weight::from_parts(10_000, 0)
+        }
+        fn remove_service_endpoint() -> Weight {
+            Weight::from_parts(10_000, 0)
+        }
     }
 }

@@ -57,7 +57,14 @@ pub mod pallet {
 
     /// Task status enum.
     #[derive(
-        Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen,
+        Clone,
+        Encode,
+        Decode,
+        Eq,
+        PartialEq,
+        RuntimeDebug,
+        TypeInfo,
+        MaxEncodedLen,
         codec::DecodeWithMemTracking,
     )]
     pub enum TaskStatus {
@@ -307,15 +314,15 @@ pub mod pallet {
             ensure!(reward >= T::MinTaskReward::get(), Error::<T>::RewardTooLow);
             let bounded_title: BoundedVec<u8, T::MaxTitleLength> =
                 title.try_into().map_err(|_| Error::<T>::TitleTooLong)?;
-            let bounded_description: BoundedVec<u8, T::MaxDescriptionLength> =
-                description.try_into().map_err(|_| Error::<T>::DescriptionTooLong)?;
+            let bounded_description: BoundedVec<u8, T::MaxDescriptionLength> = description
+                .try_into()
+                .map_err(|_| Error::<T>::DescriptionTooLong)?;
 
             let current_block = <frame_system::Pallet<T>>::block_number();
             ensure!(deadline > current_block, Error::<T>::TaskExpired);
 
             // Reserve the reward (escrow)
-            T::Currency::reserve(&poster, reward)
-                .map_err(|_| Error::<T>::InsufficientBalance)?;
+            T::Currency::reserve(&poster, reward).map_err(|_| Error::<T>::InsufficientBalance)?;
 
             // Create task
             let task_id = TaskCount::<T>::get();
@@ -369,7 +376,10 @@ pub mod pallet {
             let bidder = ensure_signed(origin)?;
 
             let task = Tasks::<T>::get(task_id).ok_or(Error::<T>::TaskNotFound)?;
-            ensure!(task.status == TaskStatus::Open, Error::<T>::InvalidTaskStatus);
+            ensure!(
+                task.status == TaskStatus::Open,
+                Error::<T>::InvalidTaskStatus
+            );
             ensure!(task.poster != bidder, Error::<T>::CannotBidOnOwnTask);
 
             // Check deadline
@@ -383,8 +393,9 @@ pub mod pallet {
             //     Error::<T>::InsufficientReputation
             // );
 
-            let bounded_proposal: BoundedVec<u8, T::MaxProposalLength> =
-                proposal.try_into().map_err(|_| Error::<T>::ProposalTooLong)?;
+            let bounded_proposal: BoundedVec<u8, T::MaxProposalLength> = proposal
+                .try_into()
+                .map_err(|_| Error::<T>::ProposalTooLong)?;
 
             // Check bid count (simple check: if we can insert, there's space)
             let bid_info = BidInfo::<T> {
@@ -422,7 +433,10 @@ pub mod pallet {
             Tasks::<T>::try_mutate(task_id, |maybe_task| -> DispatchResult {
                 let task = maybe_task.as_mut().ok_or(Error::<T>::TaskNotFound)?;
                 ensure!(task.poster == poster, Error::<T>::NotPoster);
-                ensure!(task.status == TaskStatus::Open, Error::<T>::InvalidTaskStatus);
+                ensure!(
+                    task.status == TaskStatus::Open,
+                    Error::<T>::InvalidTaskStatus
+                );
 
                 // Verify bid exists
                 ensure!(
@@ -499,7 +513,12 @@ pub mod pallet {
 
             // Unreserve from poster and transfer to worker
             T::Currency::unreserve(&poster, task.reward);
-            T::Currency::transfer(&poster, &worker, task.reward, ExistenceRequirement::KeepAlive)?;
+            T::Currency::transfer(
+                &poster,
+                &worker,
+                task.reward,
+                ExistenceRequirement::KeepAlive,
+            )?;
 
             // Update task status
             Tasks::<T>::try_mutate(task_id, |maybe_task| -> DispatchResult {
@@ -534,8 +553,8 @@ pub mod pallet {
                 let task = maybe_task.as_mut().ok_or(Error::<T>::TaskNotFound)?;
 
                 // Only poster or assigned worker can dispute
-                let is_authorized = task.poster == disputer
-                    || task.assigned_to == Some(disputer.clone());
+                let is_authorized =
+                    task.poster == disputer || task.assigned_to == Some(disputer.clone());
                 ensure!(is_authorized, Error::<T>::NotPoster);
 
                 // Can dispute if Assigned, InProgress, or Completed
@@ -573,7 +592,10 @@ pub mod pallet {
             Tasks::<T>::try_mutate(task_id, |maybe_task| -> DispatchResult {
                 let task = maybe_task.as_mut().ok_or(Error::<T>::TaskNotFound)?;
                 ensure!(task.poster == poster, Error::<T>::NotPoster);
-                ensure!(task.status == TaskStatus::Open, Error::<T>::InvalidTaskStatus);
+                ensure!(
+                    task.status == TaskStatus::Open,
+                    Error::<T>::InvalidTaskStatus
+                );
 
                 // Unreserve escrow
                 T::Currency::unreserve(&poster, task.reward);
@@ -620,7 +642,12 @@ pub mod pallet {
 
             // Unreserve and transfer to winner
             T::Currency::unreserve(&poster, task.reward);
-            T::Currency::transfer(&poster, &winner, task.reward, ExistenceRequirement::KeepAlive)?;
+            T::Currency::transfer(
+                &poster,
+                &winner,
+                task.reward,
+                ExistenceRequirement::KeepAlive,
+            )?;
 
             // Update task status
             Tasks::<T>::try_mutate(task_id, |maybe_task| -> DispatchResult {

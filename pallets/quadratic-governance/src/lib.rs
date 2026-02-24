@@ -49,9 +49,7 @@ pub mod pallet {
     pub type VoteWeight = u128;
 
     /// Status of a governance proposal.
-    #[derive(
-        Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen,
-    )]
+    #[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum ProposalStatus {
         Active,
         Passed,
@@ -68,9 +66,7 @@ pub mod pallet {
     }
 
     /// A vote direction.
-    #[derive(
-        Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen,
-    )]
+    #[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum Vote {
         Yes,
         No,
@@ -255,10 +251,7 @@ pub mod pallet {
         /// or cancelled).
         #[pallet::call_index(0)]
         #[pallet::weight(T::DbWeight::get().reads_writes(2, 3))]
-        pub fn submit_proposal(
-            origin: OriginFor<T>,
-            description_hash: [u8; 32],
-        ) -> DispatchResult {
+        pub fn submit_proposal(origin: OriginFor<T>, description_hash: [u8; 32]) -> DispatchResult {
             let who = ensure_signed(origin)?;
 
             // DID check — must have an active (non-deactivated) DID document.
@@ -266,8 +259,7 @@ pub mod pallet {
 
             // Reserve deposit.
             let deposit = T::MinProposalDeposit::get();
-            T::Currency::reserve(&who, deposit)
-                .map_err(|_| Error::<T>::InsufficientDeposit)?;
+            T::Currency::reserve(&who, deposit).map_err(|_| Error::<T>::InsufficientDeposit)?;
 
             let now = frame_system::Pallet::<T>::block_number();
             let end_block = now.saturating_add(T::VotingPeriod::get());
@@ -323,7 +315,10 @@ pub mod pallet {
             // Proposal must exist and be active
             Proposals::<T>::try_mutate(proposal_id, |maybe_prop| -> DispatchResult {
                 let proposal = maybe_prop.as_mut().ok_or(Error::<T>::ProposalNotFound)?;
-                ensure!(proposal.status == ProposalStatus::Active, Error::<T>::VotingEnded);
+                ensure!(
+                    proposal.status == ProposalStatus::Active,
+                    Error::<T>::VotingEnded
+                );
 
                 // Must still be within voting period
                 let now = frame_system::Pallet::<T>::block_number();
@@ -369,15 +364,15 @@ pub mod pallet {
         /// totals.  Unreserves the proposer's deposit regardless of outcome.
         #[pallet::call_index(2)]
         #[pallet::weight(T::DbWeight::get().reads_writes(1, 1))]
-        pub fn finalize_proposal(
-            origin: OriginFor<T>,
-            proposal_id: ProposalId,
-        ) -> DispatchResult {
+        pub fn finalize_proposal(origin: OriginFor<T>, proposal_id: ProposalId) -> DispatchResult {
             let _who = ensure_signed(origin)?;
 
             Proposals::<T>::try_mutate(proposal_id, |maybe_prop| -> DispatchResult {
                 let proposal = maybe_prop.as_mut().ok_or(Error::<T>::ProposalNotFound)?;
-                ensure!(proposal.status == ProposalStatus::Active, Error::<T>::VotingEnded);
+                ensure!(
+                    proposal.status == ProposalStatus::Active,
+                    Error::<T>::VotingEnded
+                );
 
                 let now = frame_system::Pallet::<T>::block_number();
                 ensure!(now >= proposal.end_block, Error::<T>::ProposalStillActive);
@@ -416,16 +411,15 @@ pub mod pallet {
         /// (refunded).
         #[pallet::call_index(3)]
         #[pallet::weight(T::DbWeight::get().reads_writes(1, 2))]
-        pub fn cancel_proposal(
-            origin: OriginFor<T>,
-            proposal_id: ProposalId,
-        ) -> DispatchResult {
+        pub fn cancel_proposal(origin: OriginFor<T>, proposal_id: ProposalId) -> DispatchResult {
             let who = ensure_signed(origin)?;
 
-            let proposal = Proposals::<T>::get(proposal_id)
-                .ok_or(Error::<T>::ProposalNotFound)?;
+            let proposal = Proposals::<T>::get(proposal_id).ok_or(Error::<T>::ProposalNotFound)?;
 
-            ensure!(proposal.status == ProposalStatus::Active, Error::<T>::VotingEnded);
+            ensure!(
+                proposal.status == ProposalStatus::Active,
+                Error::<T>::VotingEnded
+            );
             ensure!(proposal.proposer == who, Error::<T>::NotProposer);
 
             // Refund deposit
@@ -494,9 +488,17 @@ pub mod pallet {
     }
 
     impl WeightInfo for () {
-        fn submit_proposal() -> Weight { Weight::zero() }
-        fn vote() -> Weight { Weight::zero() }
-        fn finalize_proposal() -> Weight { Weight::zero() }
-        fn cancel_proposal() -> Weight { Weight::zero() }
+        fn submit_proposal() -> Weight {
+            Weight::zero()
+        }
+        fn vote() -> Weight {
+            Weight::zero()
+        }
+        fn finalize_proposal() -> Weight {
+            Weight::zero()
+        }
+        fn cancel_proposal() -> Weight {
+            Weight::zero()
+        }
     }
 }

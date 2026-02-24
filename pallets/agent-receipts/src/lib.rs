@@ -100,8 +100,7 @@ pub mod pallet {
     /// Per-agent nonce — the next receipt index for a given agent.
     #[pallet::storage]
     #[pallet::getter(fn agent_nonce)]
-    pub type AgentNonce<T: Config> =
-        StorageMap<_, Blake2_128Concat, AgentIdOf<T>, u64, ValueQuery>;
+    pub type AgentNonce<T: Config> = StorageMap<_, Blake2_128Concat, AgentIdOf<T>, u64, ValueQuery>;
 
     /// Global receipt counter (total receipts ever submitted).
     #[pallet::storage]
@@ -121,10 +120,7 @@ pub mod pallet {
             block_number: BlockNumberFor<T>,
         },
         /// Old receipts were cleared for an agent.
-        ReceiptsCleared {
-            agent_id: Vec<u8>,
-            count: u64,
-        },
+        ReceiptsCleared { agent_id: Vec<u8>, count: u64 },
     }
 
     // ========== Errors ==========

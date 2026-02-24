@@ -184,11 +184,7 @@ fn record_contribution_large_score() {
 fn record_contribution_fails_unsigned() {
     new_test_ext().execute_with(|| {
         assert_noop!(
-            ClawTokenPallet::record_contribution(
-                frame_system::RawOrigin::None.into(),
-                1,
-                100
-            ),
+            ClawTokenPallet::record_contribution(frame_system::RawOrigin::None.into(), 1, 100),
             sp_runtime::DispatchError::BadOrigin
         );
     });
@@ -386,13 +382,7 @@ fn treasury_spend_zero_amount() {
     new_test_ext().execute_with(|| {
         assert_ok!(ClawTokenPallet::treasury_spend(root(), 1, 0));
 
-        System::assert_has_event(
-            Event::<Test>::TreasurySpend {
-                to: 1,
-                amount: 0,
-            }
-            .into(),
-        );
+        System::assert_has_event(Event::<Test>::TreasurySpend { to: 1, amount: 0 }.into());
     });
 }
 

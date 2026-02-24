@@ -2,10 +2,7 @@
 
 use crate as pallet_rpc_registry;
 use crate::pallet::{ActiveNodes, NodeCount, NodeStatus, NodeType, OwnerNodes, RpcNodes};
-use frame_support::{
-    assert_noop, assert_ok, derive_impl,
-    traits::ConstU32,
-};
+use frame_support::{assert_noop, assert_ok, derive_impl, traits::ConstU32};
 use sp_runtime::{traits::IdentityLookup, BuildStorage};
 
 type Block = frame_system::mocking::MockBlock<Test>;

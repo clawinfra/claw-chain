@@ -53,10 +53,9 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
 
     /// Type alias for balance (compatible with pallet-balances).
-    pub type BalanceOf<T> =
-        <<T as Config>::Currency as frame_support::traits::Currency<
-            <T as frame_system::Config>::AccountId,
-        >>::Balance;
+    pub type BalanceOf<T> = <<T as Config>::Currency as frame_support::traits::Currency<
+        <T as frame_system::Config>::AccountId,
+    >>::Balance;
 
     /// Core reputation information for an agent.
     #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -339,8 +338,10 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
 
-            let bounded_reason: BoundedVec<u8, T::MaxCommentLength> =
-                reason.clone().try_into().map_err(|_| Error::<T>::CommentTooLong)?;
+            let bounded_reason: BoundedVec<u8, T::MaxCommentLength> = reason
+                .clone()
+                .try_into()
+                .map_err(|_| Error::<T>::CommentTooLong)?;
 
             // Apply negative delta
             Self::apply_reputation_change(&account, -(amount as i32), false);
@@ -381,7 +382,9 @@ pub mod pallet {
                 let new_score = if clamped_delta >= 0 {
                     old_score.saturating_add(clamped_delta as u32).min(10000)
                 } else {
-                    old_score.saturating_sub(clamped_delta.unsigned_abs()).max(0)
+                    old_score
+                        .saturating_sub(clamped_delta.unsigned_abs())
+                        .max(0)
                 };
 
                 rep.score = new_score;

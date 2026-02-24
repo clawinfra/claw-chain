@@ -2,9 +2,7 @@
 //!
 //! Defines the genesis configuration for development and testnet chains.
 
-use clawchain_runtime::{
-    opaque::SessionKeys, AccountId, Balance, Signature, WASM_BINARY,
-};
+use clawchain_runtime::{opaque::SessionKeys, AccountId, Balance, Signature, WASM_BINARY};
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
@@ -143,8 +141,8 @@ fn testnet_genesis(
     });
 
     // Each endowed account gets an equal share of validator + treasury allocation for dev
-    let endowment: u128 = (VALIDATOR_ALLOCATION + TREASURY_ALLOCATION)
-        / endowed_accounts.len() as u128;
+    let endowment: u128 =
+        (VALIDATOR_ALLOCATION + TREASURY_ALLOCATION) / endowed_accounts.len() as u128;
 
     serde_json::json!({
         "balances": {

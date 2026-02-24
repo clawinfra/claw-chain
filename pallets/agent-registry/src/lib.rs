@@ -42,7 +42,14 @@ pub mod pallet {
 
     /// Agent status enum.
     #[derive(
-        Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen,
+        Clone,
+        Encode,
+        Decode,
+        Eq,
+        PartialEq,
+        RuntimeDebug,
+        TypeInfo,
+        MaxEncodedLen,
         codec::DecodeWithMemTracking,
     )]
     pub enum AgentStatus {
@@ -205,8 +212,9 @@ pub mod pallet {
 
             let bounded_did: BoundedVec<u8, T::MaxDidLength> =
                 did.clone().try_into().map_err(|_| Error::<T>::DidTooLong)?;
-            let bounded_metadata: BoundedVec<u8, T::MaxMetadataLength> =
-                metadata.try_into().map_err(|_| Error::<T>::MetadataTooLong)?;
+            let bounded_metadata: BoundedVec<u8, T::MaxMetadataLength> = metadata
+                .try_into()
+                .map_err(|_| Error::<T>::MetadataTooLong)?;
 
             let agent_id = AgentCount::<T>::get();
             let current_block = <frame_system::Pallet<T>>::block_number();
@@ -263,8 +271,10 @@ pub mod pallet {
                     Error::<T>::AgentAlreadyDeregistered
                 );
 
-                let bounded_metadata: BoundedVec<u8, T::MaxMetadataLength> =
-                    metadata.clone().try_into().map_err(|_| Error::<T>::MetadataTooLong)?;
+                let bounded_metadata: BoundedVec<u8, T::MaxMetadataLength> = metadata
+                    .clone()
+                    .try_into()
+                    .map_err(|_| Error::<T>::MetadataTooLong)?;
 
                 agent.metadata = bounded_metadata;
                 agent.last_active = <frame_system::Pallet<T>>::block_number();
@@ -272,10 +282,7 @@ pub mod pallet {
                 Ok(())
             })?;
 
-            Self::deposit_event(Event::AgentUpdated {
-                agent_id,
-                metadata,
-            });
+            Self::deposit_event(Event::AgentUpdated { agent_id, metadata });
 
             Ok(())
         }

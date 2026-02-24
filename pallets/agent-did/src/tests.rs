@@ -1,15 +1,9 @@
 //! Unit tests for the Agent DID pallet.
 
 use crate as pallet_agent_did;
-use crate::pallet::{DIDDocuments, DIDCount, ServiceEndpoints};
-use frame_support::{
-    assert_noop, assert_ok, derive_impl,
-    traits::ConstU32,
-};
-use sp_runtime::{
-    traits::IdentityLookup,
-    BuildStorage,
-};
+use crate::pallet::{DIDCount, DIDDocuments, ServiceEndpoints};
+use frame_support::{assert_noop, assert_ok, derive_impl, traits::ConstU32};
+use sp_runtime::{traits::IdentityLookup, BuildStorage};
 
 type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -78,9 +72,7 @@ fn register_did_works() {
 fn register_did_emits_event() {
     new_test_ext().execute_with(|| {
         assert_ok!(AgentDID::register_did(signed(2), b"".to_vec()));
-        System::assert_last_event(
-            crate::pallet::Event::DIDRegistered { controller: 2u64 }.into(),
-        );
+        System::assert_last_event(crate::pallet::Event::DIDRegistered { controller: 2u64 }.into());
     });
 }
 
@@ -157,9 +149,7 @@ fn deactivate_did_works() {
         assert!(doc.deactivated);
         assert_eq!(DIDCount::<Test>::get(), 0);
 
-        System::assert_last_event(
-            crate::pallet::Event::DIDDeactivated { controller: 1u64 }.into(),
-        );
+        System::assert_last_event(crate::pallet::Event::DIDDeactivated { controller: 1u64 }.into());
     });
 }
 
@@ -206,7 +196,10 @@ fn add_service_endpoint_works() {
         let se = ServiceEndpoints::<Test>::get(1u64, &bounded_id).expect("endpoint exists");
         assert_eq!(se.id.to_vec(), b"#rpc".to_vec());
         assert_eq!(se.service_type.to_vec(), b"JsonRpcService".to_vec());
-        assert_eq!(se.endpoint.to_vec(), b"https://node.claw.network/rpc".to_vec());
+        assert_eq!(
+            se.endpoint.to_vec(),
+            b"https://node.claw.network/rpc".to_vec()
+        );
     });
 }
 
@@ -224,7 +217,8 @@ fn add_service_endpoint_emits_event() {
             crate::pallet::Event::ServiceEndpointAdded {
                 controller: 1u64,
                 endpoint_id: b"#storage".to_vec(),
-            }.into(),
+            }
+            .into(),
         );
     });
 }
@@ -234,11 +228,17 @@ fn add_service_endpoint_fails_duplicate_id() {
     new_test_ext().execute_with(|| {
         assert_ok!(AgentDID::register_did(signed(1), b"".to_vec()));
         assert_ok!(AgentDID::add_service_endpoint(
-            signed(1), b"#rpc".to_vec(), b"T".to_vec(), b"https://a".to_vec(),
+            signed(1),
+            b"#rpc".to_vec(),
+            b"T".to_vec(),
+            b"https://a".to_vec(),
         ));
         assert_noop!(
             AgentDID::add_service_endpoint(
-                signed(1), b"#rpc".to_vec(), b"T".to_vec(), b"https://b".to_vec(),
+                signed(1),
+                b"#rpc".to_vec(),
+                b"T".to_vec(),
+                b"https://b".to_vec(),
             ),
             crate::pallet::Error::<Test>::ServiceEndpointAlreadyExists
         );
@@ -252,7 +252,10 @@ fn add_service_endpoint_fails_on_deactivated_did() {
         assert_ok!(AgentDID::deactivate_did(signed(1)));
         assert_noop!(
             AgentDID::add_service_endpoint(
-                signed(1), b"#rpc".to_vec(), b"T".to_vec(), b"https://a".to_vec(),
+                signed(1),
+                b"#rpc".to_vec(),
+                b"T".to_vec(),
+                b"https://a".to_vec(),
             ),
             crate::pallet::Error::<Test>::DIDDeactivated
         );
@@ -266,12 +269,18 @@ fn add_service_endpoint_fails_too_many() {
         for i in 0u8..10 {
             let id = alloc::format!("#{}", i).into_bytes();
             assert_ok!(AgentDID::add_service_endpoint(
-                signed(1), id, b"T".to_vec(), b"http://x".to_vec(),
+                signed(1),
+                id,
+                b"T".to_vec(),
+                b"http://x".to_vec(),
             ));
         }
         assert_noop!(
             AgentDID::add_service_endpoint(
-                signed(1), b"#overflow".to_vec(), b"T".to_vec(), b"http://x".to_vec(),
+                signed(1),
+                b"#overflow".to_vec(),
+                b"T".to_vec(),
+                b"http://x".to_vec(),
             ),
             crate::pallet::Error::<Test>::TooManyServiceEndpoints
         );
@@ -285,9 +294,15 @@ fn remove_service_endpoint_works() {
     new_test_ext().execute_with(|| {
         assert_ok!(AgentDID::register_did(signed(1), b"".to_vec()));
         assert_ok!(AgentDID::add_service_endpoint(
-            signed(1), b"#rpc".to_vec(), b"T".to_vec(), b"https://node".to_vec(),
+            signed(1),
+            b"#rpc".to_vec(),
+            b"T".to_vec(),
+            b"https://node".to_vec(),
         ));
-        assert_ok!(AgentDID::remove_service_endpoint(signed(1), b"#rpc".to_vec()));
+        assert_ok!(AgentDID::remove_service_endpoint(
+            signed(1),
+            b"#rpc".to_vec()
+        ));
 
         let doc = DIDDocuments::<Test>::get(1u64).unwrap();
         assert_eq!(doc.service_endpoint_count, 0);
@@ -296,7 +311,8 @@ fn remove_service_endpoint_works() {
             crate::pallet::Event::ServiceEndpointRemoved {
                 controller: 1u64,
                 endpoint_id: b"#rpc".to_vec(),
-            }.into(),
+            }
+            .into(),
         );
     });
 }
@@ -317,7 +333,10 @@ fn remove_service_endpoint_fails_on_deactivated_did() {
     new_test_ext().execute_with(|| {
         assert_ok!(AgentDID::register_did(signed(1), b"".to_vec()));
         assert_ok!(AgentDID::add_service_endpoint(
-            signed(1), b"#rpc".to_vec(), b"T".to_vec(), b"http://x".to_vec(),
+            signed(1),
+            b"#rpc".to_vec(),
+            b"T".to_vec(),
+            b"http://x".to_vec(),
         ));
         assert_ok!(AgentDID::deactivate_did(signed(1)));
         assert_noop!(
@@ -355,13 +374,29 @@ fn service_endpoints_are_account_scoped() {
         assert_ok!(AgentDID::register_did(signed(2), b"".to_vec()));
 
         assert_ok!(AgentDID::add_service_endpoint(
-            signed(1), b"#rpc".to_vec(), b"T".to_vec(), b"https://node1".to_vec(),
+            signed(1),
+            b"#rpc".to_vec(),
+            b"T".to_vec(),
+            b"https://node1".to_vec(),
         ));
         assert_ok!(AgentDID::add_service_endpoint(
-            signed(2), b"#rpc".to_vec(), b"T".to_vec(), b"https://node2".to_vec(),
+            signed(2),
+            b"#rpc".to_vec(),
+            b"T".to_vec(),
+            b"https://node2".to_vec(),
         ));
 
-        assert_eq!(DIDDocuments::<Test>::get(1u64).unwrap().service_endpoint_count, 1);
-        assert_eq!(DIDDocuments::<Test>::get(2u64).unwrap().service_endpoint_count, 1);
+        assert_eq!(
+            DIDDocuments::<Test>::get(1u64)
+                .unwrap()
+                .service_endpoint_count,
+            1
+        );
+        assert_eq!(
+            DIDDocuments::<Test>::get(2u64)
+                .unwrap()
+                .service_endpoint_count,
+            1
+        );
     });
 }

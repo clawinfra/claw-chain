@@ -198,13 +198,7 @@ fn submit_review_emits_events() {
 fn cannot_review_self() {
     new_test_ext().execute_with(|| {
         assert_noop!(
-            Reputation::submit_review(
-                RuntimeOrigin::signed(1),
-                1,
-                5,
-                b"Self review".to_vec(),
-                1
-            ),
+            Reputation::submit_review(RuntimeOrigin::signed(1), 1, 5, b"Self review".to_vec(), 1),
             Error::<Test>::SelfReview
         );
     });
@@ -214,13 +208,7 @@ fn cannot_review_self() {
 fn invalid_rating_zero_fails() {
     new_test_ext().execute_with(|| {
         assert_noop!(
-            Reputation::submit_review(
-                RuntimeOrigin::signed(1),
-                2,
-                0,
-                b"Comment".to_vec(),
-                1
-            ),
+            Reputation::submit_review(RuntimeOrigin::signed(1), 2, 0, b"Comment".to_vec(), 1),
             Error::<Test>::InvalidRating
         );
     });
@@ -230,13 +218,7 @@ fn invalid_rating_zero_fails() {
 fn invalid_rating_six_fails() {
     new_test_ext().execute_with(|| {
         assert_noop!(
-            Reputation::submit_review(
-                RuntimeOrigin::signed(1),
-                2,
-                6,
-                b"Comment".to_vec(),
-                1
-            ),
+            Reputation::submit_review(RuntimeOrigin::signed(1), 2, 6, b"Comment".to_vec(), 1),
             Error::<Test>::InvalidRating
         );
     });
@@ -246,13 +228,7 @@ fn invalid_rating_six_fails() {
 fn invalid_rating_max_u8_fails() {
     new_test_ext().execute_with(|| {
         assert_noop!(
-            Reputation::submit_review(
-                RuntimeOrigin::signed(1),
-                2,
-                255,
-                b"Comment".to_vec(),
-                1
-            ),
+            Reputation::submit_review(RuntimeOrigin::signed(1), 2, 255, b"Comment".to_vec(), 1),
             Error::<Test>::InvalidRating
         );
     });
@@ -263,13 +239,7 @@ fn comment_too_long_fails() {
     new_test_ext().execute_with(|| {
         let long_comment = vec![b'x'; 257]; // Exceeds MaxCommentLength of 256
         assert_noop!(
-            Reputation::submit_review(
-                RuntimeOrigin::signed(1),
-                2,
-                5,
-                long_comment,
-                1
-            ),
+            Reputation::submit_review(RuntimeOrigin::signed(1), 2, 5, long_comment, 1),
             Error::<Test>::CommentTooLong
         );
     });
@@ -339,13 +309,7 @@ fn submit_review_overwrites_previous() {
 fn submit_review_unsigned_fails() {
     new_test_ext().execute_with(|| {
         assert_noop!(
-            Reputation::submit_review(
-                RuntimeOrigin::none(),
-                2,
-                5,
-                b"Comment".to_vec(),
-                1
-            ),
+            Reputation::submit_review(RuntimeOrigin::none(), 2, 5, b"Comment".to_vec(), 1),
             sp_runtime::DispatchError::BadOrigin
         );
     });
@@ -516,12 +480,7 @@ fn slash_reputation_emits_events() {
 fn slash_reputation_requires_root() {
     new_test_ext().execute_with(|| {
         assert_noop!(
-            Reputation::slash_reputation(
-                RuntimeOrigin::signed(1),
-                2,
-                1000,
-                b"Reason".to_vec()
-            ),
+            Reputation::slash_reputation(RuntimeOrigin::signed(1), 2, 1000, b"Reason".to_vec()),
             sp_runtime::DispatchError::BadOrigin
         );
     });

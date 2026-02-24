@@ -444,11 +444,7 @@ fn update_reputation_works() {
         assert_eq!(agent.reputation, 6000);
 
         // Decrease reputation
-        assert_ok!(AgentRegistryPallet::update_reputation(
-            account(1),
-            0,
-            -2000
-        ));
+        assert_ok!(AgentRegistryPallet::update_reputation(account(1), 0, -2000));
         let agent = AgentRegistry::<Test>::get(0).unwrap();
         assert_eq!(agent.reputation, 4000);
     });
@@ -599,9 +595,7 @@ fn deregister_agent_emits_event() {
 
         assert_ok!(AgentRegistryPallet::deregister_agent(account(1), 0));
 
-        System::assert_has_event(
-            Event::<Test>::AgentDeregistered { agent_id: 0 }.into(),
-        );
+        System::assert_has_event(Event::<Test>::AgentDeregistered { agent_id: 0 }.into());
     });
 }
 

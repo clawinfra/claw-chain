@@ -1,11 +1,7 @@
 //! Tests for pallet-gas-quota
 
 use crate::{self as pallet_gas_quota, AgentQuotas};
-use frame_support::{
-    assert_noop, assert_ok,
-    parameter_types,
-    traits::ConstU32,
-};
+use frame_support::{assert_noop, assert_ok, parameter_types, traits::ConstU32};
 use sp_core::H256;
 use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
@@ -199,7 +195,10 @@ fn consume_quota_charges_fee_over_limit() {
         // 11th TX should charge fee
         assert_ok!(pallet_gas_quota::Pallet::<Test>::consume_quota(&4));
         let balance_after = pallet_balances::Pallet::<Test>::free_balance(4);
-        assert!(balance_after < balance_before, "Fee should have been charged");
+        assert!(
+            balance_after < balance_before,
+            "Fee should have been charged"
+        );
     });
 }
 
@@ -218,6 +217,9 @@ fn quota_resets_after_day() {
         assert_ok!(pallet_gas_quota::Pallet::<Test>::consume_quota(&4));
 
         let quota_after = AgentQuotas::<Test>::get(4).unwrap();
-        assert_eq!(quota_after.daily_used, 1, "Counter should reset and count just this TX");
+        assert_eq!(
+            quota_after.daily_used, 1,
+            "Counter should reset and count just this TX"
+        );
     });
 }

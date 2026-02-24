@@ -127,10 +127,7 @@ pub mod pallet {
             free_quota: u32,
         },
         /// A transaction used quota. [agent, remaining_quota]
-        QuotaUsed {
-            agent: T::AccountId,
-            remaining: u32,
-        },
+        QuotaUsed { agent: T::AccountId, remaining: u32 },
         /// An over-quota fee was charged. [agent, fee_amount]
         FeeCharged {
             agent: T::AccountId,
@@ -142,10 +139,7 @@ pub mod pallet {
             stake: BalanceOf<T>,
         },
         /// Reputation tier updated. [agent, tier]
-        ReputationTierUpdated {
-            agent: T::AccountId,
-            tier: u8,
-        },
+        ReputationTierUpdated { agent: T::AccountId, tier: u8 },
     }
 
     // =========================================================================
@@ -251,17 +245,15 @@ pub mod pallet {
             let base_quota = if stake_per_tx.is_zero() {
                 T::MinFreeQuota::get()
             } else {
-                let stake_quota = (stake / stake_per_tx)
-                    .try_into()
-                    .unwrap_or(u32::MAX);
+                let stake_quota = (stake / stake_per_tx).try_into().unwrap_or(u32::MAX);
                 stake_quota.max(T::MinFreeQuota::get())
             };
 
             // Apply reputation multiplier
             match reputation_tier {
-                0 => base_quota,                               // 1× (normal)
-                1 => base_quota.saturating_mul(3) / 2,        // 1.5× (high rep)
-                2 => base_quota.saturating_mul(2),            // 2× (verified contributor)
+                0 => base_quota,                       // 1× (normal)
+                1 => base_quota.saturating_mul(3) / 2, // 1.5× (high rep)
+                2 => base_quota.saturating_mul(2),     // 2× (verified contributor)
                 _ => base_quota,
             }
         }
@@ -276,7 +268,9 @@ pub mod pallet {
             Self::ensure_quota_initialized(who);
 
             AgentQuotas::<T>::try_mutate(who, |maybe_quota| -> DispatchResult {
-                let quota = maybe_quota.as_mut().ok_or(Error::<T>::QuotaNotInitialized)?;
+                let quota = maybe_quota
+                    .as_mut()
+                    .ok_or(Error::<T>::QuotaNotInitialized)?;
 
                 // Reset daily counter if a new day has started
                 let blocks_since_day_start = current_block.saturating_sub(quota.day_start_block);
@@ -338,10 +332,10 @@ pub mod pallet {
             // Full formula in ADR-002; simplified here for v1
             let discount = T::FeeDiscountPerKStake::get();
             let stake_k = stake / (T::StakePerFreeTx::get().saturating_mul(1000u32.into()));
-            let total_discount = discount.saturating_pow(
-                stake_k.try_into().unwrap_or(0usize),
-            );
-            total_discount.mul_floor(base_fee).max(base_fee / 10u32.into()) // floor at 10% of base
+            let total_discount = discount.saturating_pow(stake_k.try_into().unwrap_or(0usize));
+            total_discount
+                .mul_floor(base_fee)
+                .max(base_fee / 10u32.into()) // floor at 10% of base
         }
 
         /// Ensure an agent has a quota record, initializing if missing.

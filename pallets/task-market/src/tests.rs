@@ -479,12 +479,7 @@ fn cannot_bid_on_own_task() {
         post_default_task(1);
 
         assert_noop!(
-            TaskMarket::bid_on_task(
-                RuntimeOrigin::signed(1),
-                0,
-                800,
-                b"Proposal".to_vec()
-            ),
+            TaskMarket::bid_on_task(RuntimeOrigin::signed(1), 0, 800, b"Proposal".to_vec()),
             Error::<Test>::CannotBidOnOwnTask
         );
     });
@@ -494,12 +489,7 @@ fn cannot_bid_on_own_task() {
 fn bid_on_nonexistent_task_fails() {
     new_test_ext().execute_with(|| {
         assert_noop!(
-            TaskMarket::bid_on_task(
-                RuntimeOrigin::signed(2),
-                999,
-                800,
-                b"Proposal".to_vec()
-            ),
+            TaskMarket::bid_on_task(RuntimeOrigin::signed(2), 999, 800, b"Proposal".to_vec()),
             Error::<Test>::TaskNotFound
         );
     });
@@ -512,12 +502,7 @@ fn bid_fails_if_task_not_open() {
 
         // Task is now Assigned, can't bid
         assert_noop!(
-            TaskMarket::bid_on_task(
-                RuntimeOrigin::signed(3),
-                task_id,
-                800,
-                b"Proposal".to_vec()
-            ),
+            TaskMarket::bid_on_task(RuntimeOrigin::signed(3), task_id, 800, b"Proposal".to_vec()),
             Error::<Test>::InvalidTaskStatus
         );
     });
@@ -539,12 +524,7 @@ fn bid_fails_if_task_expired() {
         System::set_block_number(11);
 
         assert_noop!(
-            TaskMarket::bid_on_task(
-                RuntimeOrigin::signed(2),
-                0,
-                800,
-                b"Proposal".to_vec()
-            ),
+            TaskMarket::bid_on_task(RuntimeOrigin::signed(2), 0, 800, b"Proposal".to_vec()),
             Error::<Test>::TaskExpired
         );
     });
@@ -557,12 +537,7 @@ fn bid_proposal_too_long_fails() {
 
         let long_proposal = vec![b'x'; 513]; // Exceeds MaxProposalLength of 512
         assert_noop!(
-            TaskMarket::bid_on_task(
-                RuntimeOrigin::signed(2),
-                0,
-                800,
-                long_proposal
-            ),
+            TaskMarket::bid_on_task(RuntimeOrigin::signed(2), 0, 800, long_proposal),
             Error::<Test>::ProposalTooLong
         );
     });
@@ -759,11 +734,7 @@ fn submit_work_fails_for_non_worker() {
 
         // Account 3 is not the assigned worker
         assert_noop!(
-            TaskMarket::submit_work(
-                RuntimeOrigin::signed(3),
-                task_id,
-                b"proof".to_vec()
-            ),
+            TaskMarket::submit_work(RuntimeOrigin::signed(3), task_id, b"proof".to_vec()),
             Error::<Test>::NotAssignedWorker
         );
     });
@@ -776,11 +747,7 @@ fn submit_work_fails_for_poster() {
 
         // Poster can't submit work
         assert_noop!(
-            TaskMarket::submit_work(
-                RuntimeOrigin::signed(1),
-                task_id,
-                b"proof".to_vec()
-            ),
+            TaskMarket::submit_work(RuntimeOrigin::signed(1), task_id, b"proof".to_vec()),
             Error::<Test>::NotAssignedWorker
         );
     });
@@ -793,11 +760,7 @@ fn submit_work_fails_if_task_open() {
 
         // Task is Open, no worker assigned
         assert_noop!(
-            TaskMarket::submit_work(
-                RuntimeOrigin::signed(2),
-                0,
-                b"proof".to_vec()
-            ),
+            TaskMarket::submit_work(RuntimeOrigin::signed(2), 0, b"proof".to_vec()),
             Error::<Test>::NotAssignedWorker
         );
     });
@@ -807,11 +770,7 @@ fn submit_work_fails_if_task_open() {
 fn submit_work_fails_for_nonexistent_task() {
     new_test_ext().execute_with(|| {
         assert_noop!(
-            TaskMarket::submit_work(
-                RuntimeOrigin::signed(1),
-                999,
-                b"proof".to_vec()
-            ),
+            TaskMarket::submit_work(RuntimeOrigin::signed(1), 999, b"proof".to_vec()),
             Error::<Test>::TaskNotFound
         );
     });
@@ -1043,11 +1002,7 @@ fn dispute_fails_for_unauthorized() {
 
         // Account 3 is neither poster nor worker
         assert_noop!(
-            TaskMarket::dispute_task(
-                RuntimeOrigin::signed(3),
-                task_id,
-                b"Reason".to_vec()
-            ),
+            TaskMarket::dispute_task(RuntimeOrigin::signed(3), task_id, b"Reason".to_vec()),
             Error::<Test>::NotPoster
         );
     });
@@ -1059,11 +1014,7 @@ fn dispute_fails_for_open_task() {
         post_default_task(1);
 
         assert_noop!(
-            TaskMarket::dispute_task(
-                RuntimeOrigin::signed(1),
-                0,
-                b"Reason".to_vec()
-            ),
+            TaskMarket::dispute_task(RuntimeOrigin::signed(1), 0, b"Reason".to_vec()),
             Error::<Test>::InvalidTaskStatus
         );
     });
@@ -1076,11 +1027,7 @@ fn dispute_fails_for_cancelled_task() {
         assert_ok!(TaskMarket::cancel_task(RuntimeOrigin::signed(1), 0));
 
         assert_noop!(
-            TaskMarket::dispute_task(
-                RuntimeOrigin::signed(1),
-                0,
-                b"Reason".to_vec()
-            ),
+            TaskMarket::dispute_task(RuntimeOrigin::signed(1), 0, b"Reason".to_vec()),
             Error::<Test>::InvalidTaskStatus
         );
     });
@@ -1090,11 +1037,7 @@ fn dispute_fails_for_cancelled_task() {
 fn dispute_fails_for_nonexistent_task() {
     new_test_ext().execute_with(|| {
         assert_noop!(
-            TaskMarket::dispute_task(
-                RuntimeOrigin::signed(1),
-                999,
-                b"Reason".to_vec()
-            ),
+            TaskMarket::dispute_task(RuntimeOrigin::signed(1), 999, b"Reason".to_vec()),
             Error::<Test>::TaskNotFound
         );
     });
@@ -1179,13 +1122,7 @@ fn resolve_dispute_emits_event() {
             2
         ));
 
-        System::assert_has_event(
-            Event::<Test>::DisputeResolved {
-                task_id,
-                winner: 2,
-            }
-            .into(),
-        );
+        System::assert_has_event(Event::<Test>::DisputeResolved { task_id, winner: 2 }.into());
     });
 }
 
@@ -1395,12 +1332,7 @@ fn cannot_bid_on_cancelled_task() {
         assert_ok!(TaskMarket::cancel_task(RuntimeOrigin::signed(1), 0));
 
         assert_noop!(
-            TaskMarket::bid_on_task(
-                RuntimeOrigin::signed(2),
-                0,
-                800,
-                b"Proposal".to_vec()
-            ),
+            TaskMarket::bid_on_task(RuntimeOrigin::signed(2), 0, 800, b"Proposal".to_vec()),
             Error::<Test>::InvalidTaskStatus
         );
     });

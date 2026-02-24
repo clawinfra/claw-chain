@@ -1,7 +1,7 @@
 use crate::pallet::*;
 use frame_support::{
     assert_noop, assert_ok, derive_impl, parameter_types,
-    traits::{ConstU32, ConstU64, ConstU128},
+    traits::{ConstU128, ConstU32, ConstU64},
 };
 use sp_runtime::BuildStorage;
 
@@ -85,23 +85,28 @@ fn new_test_ext() -> sp_io::TestExternalities {
         System::set_block_number(1);
 
         // Fund accounts 1, 2, 3, 4
-        pallet_balances::Pallet::<Test>::force_set_balance(
-            RuntimeOrigin::root(), 1, 10_000,
-        ).unwrap();
-        pallet_balances::Pallet::<Test>::force_set_balance(
-            RuntimeOrigin::root(), 2, 10_000,
-        ).unwrap();
-        pallet_balances::Pallet::<Test>::force_set_balance(
-            RuntimeOrigin::root(), 3, 10_000,
-        ).unwrap();
-        pallet_balances::Pallet::<Test>::force_set_balance(
-            RuntimeOrigin::root(), 4, 10_000,
-        ).unwrap();
+        pallet_balances::Pallet::<Test>::force_set_balance(RuntimeOrigin::root(), 1, 10_000)
+            .unwrap();
+        pallet_balances::Pallet::<Test>::force_set_balance(RuntimeOrigin::root(), 2, 10_000)
+            .unwrap();
+        pallet_balances::Pallet::<Test>::force_set_balance(RuntimeOrigin::root(), 3, 10_000)
+            .unwrap();
+        pallet_balances::Pallet::<Test>::force_set_balance(RuntimeOrigin::root(), 4, 10_000)
+            .unwrap();
 
         // Register DIDs for 1, 2, 3 (NOT 4 — used for "no DID" tests)
-        assert_ok!(AgentDid::register_did(RuntimeOrigin::signed(1), alloc::vec![]));
-        assert_ok!(AgentDid::register_did(RuntimeOrigin::signed(2), alloc::vec![]));
-        assert_ok!(AgentDid::register_did(RuntimeOrigin::signed(3), alloc::vec![]));
+        assert_ok!(AgentDid::register_did(
+            RuntimeOrigin::signed(1),
+            alloc::vec![]
+        ));
+        assert_ok!(AgentDid::register_did(
+            RuntimeOrigin::signed(2),
+            alloc::vec![]
+        ));
+        assert_ok!(AgentDid::register_did(
+            RuntimeOrigin::signed(3),
+            alloc::vec![]
+        ));
     });
     ext
 }
@@ -204,8 +209,16 @@ fn vote_works_weight_is_sqrt() {
 #[test]
 fn cannot_vote_twice() {
     new_test_ext().execute_with(|| {
-        assert_ok!(QuadraticGovernance::submit_proposal(RuntimeOrigin::signed(1), desc_hash()));
-        assert_ok!(QuadraticGovernance::vote(RuntimeOrigin::signed(2), 0, Vote::Yes, 100));
+        assert_ok!(QuadraticGovernance::submit_proposal(
+            RuntimeOrigin::signed(1),
+            desc_hash()
+        ));
+        assert_ok!(QuadraticGovernance::vote(
+            RuntimeOrigin::signed(2),
+            0,
+            Vote::Yes,
+            100
+        ));
 
         assert_noop!(
             QuadraticGovernance::vote(RuntimeOrigin::signed(2), 0, Vote::No, 200),
@@ -218,7 +231,10 @@ fn cannot_vote_twice() {
 #[test]
 fn cannot_vote_after_period_ends() {
     new_test_ext().execute_with(|| {
-        assert_ok!(QuadraticGovernance::submit_proposal(RuntimeOrigin::signed(1), desc_hash()));
+        assert_ok!(QuadraticGovernance::submit_proposal(
+            RuntimeOrigin::signed(1),
+            desc_hash()
+        ));
 
         // Advance past voting period (end_block = 101)
         System::set_block_number(102);
@@ -234,17 +250,33 @@ fn cannot_vote_after_period_ends() {
 #[test]
 fn finalize_passes_when_yes_wins_and_quorum_met() {
     new_test_ext().execute_with(|| {
-        assert_ok!(QuadraticGovernance::submit_proposal(RuntimeOrigin::signed(1), desc_hash()));
+        assert_ok!(QuadraticGovernance::submit_proposal(
+            RuntimeOrigin::signed(1),
+            desc_hash()
+        ));
 
         // 2 votes Yes with 100 (weight 10), 3 votes No with 25 (weight 5)
-        assert_ok!(QuadraticGovernance::vote(RuntimeOrigin::signed(2), 0, Vote::Yes, 100));
-        assert_ok!(QuadraticGovernance::vote(RuntimeOrigin::signed(3), 0, Vote::No, 25));
+        assert_ok!(QuadraticGovernance::vote(
+            RuntimeOrigin::signed(2),
+            0,
+            Vote::Yes,
+            100
+        ));
+        assert_ok!(QuadraticGovernance::vote(
+            RuntimeOrigin::signed(3),
+            0,
+            Vote::No,
+            25
+        ));
 
         // total_votes = 15, quorum = 10, 15 >= 10 ✓, yes(10) > no(5) ✓
 
         System::set_block_number(102);
 
-        assert_ok!(QuadraticGovernance::finalize_proposal(RuntimeOrigin::signed(1), 0));
+        assert_ok!(QuadraticGovernance::finalize_proposal(
+            RuntimeOrigin::signed(1),
+            0
+        ));
 
         let proposal = QuadraticGovernance::proposals(0).unwrap();
         assert_eq!(proposal.status, ProposalStatus::Passed);
@@ -265,15 +297,31 @@ fn finalize_passes_when_yes_wins_and_quorum_met() {
 #[test]
 fn finalize_rejects_when_no_wins() {
     new_test_ext().execute_with(|| {
-        assert_ok!(QuadraticGovernance::submit_proposal(RuntimeOrigin::signed(1), desc_hash()));
+        assert_ok!(QuadraticGovernance::submit_proposal(
+            RuntimeOrigin::signed(1),
+            desc_hash()
+        ));
 
         // 2 votes Yes with 25 (weight 5), 3 votes No with 100 (weight 10)
-        assert_ok!(QuadraticGovernance::vote(RuntimeOrigin::signed(2), 0, Vote::Yes, 25));
-        assert_ok!(QuadraticGovernance::vote(RuntimeOrigin::signed(3), 0, Vote::No, 100));
+        assert_ok!(QuadraticGovernance::vote(
+            RuntimeOrigin::signed(2),
+            0,
+            Vote::Yes,
+            25
+        ));
+        assert_ok!(QuadraticGovernance::vote(
+            RuntimeOrigin::signed(3),
+            0,
+            Vote::No,
+            100
+        ));
 
         System::set_block_number(102);
 
-        assert_ok!(QuadraticGovernance::finalize_proposal(RuntimeOrigin::signed(1), 0));
+        assert_ok!(QuadraticGovernance::finalize_proposal(
+            RuntimeOrigin::signed(1),
+            0
+        ));
 
         let proposal = QuadraticGovernance::proposals(0).unwrap();
         assert_eq!(proposal.status, ProposalStatus::Rejected);
@@ -284,10 +332,18 @@ fn finalize_rejects_when_no_wins() {
 #[test]
 fn finalize_fails_when_quorum_not_met() {
     new_test_ext().execute_with(|| {
-        assert_ok!(QuadraticGovernance::submit_proposal(RuntimeOrigin::signed(1), desc_hash()));
+        assert_ok!(QuadraticGovernance::submit_proposal(
+            RuntimeOrigin::signed(1),
+            desc_hash()
+        ));
 
         // 1 vote with weight 3 (sqrt(9)=3). Quorum is 10. 3 < 10 → fail.
-        assert_ok!(QuadraticGovernance::vote(RuntimeOrigin::signed(2), 0, Vote::Yes, 9));
+        assert_ok!(QuadraticGovernance::vote(
+            RuntimeOrigin::signed(2),
+            0,
+            Vote::Yes,
+            9
+        ));
 
         System::set_block_number(102);
 
@@ -302,10 +358,16 @@ fn finalize_fails_when_quorum_not_met() {
 #[test]
 fn cancel_by_proposer_refunds_deposit() {
     new_test_ext().execute_with(|| {
-        assert_ok!(QuadraticGovernance::submit_proposal(RuntimeOrigin::signed(1), desc_hash()));
+        assert_ok!(QuadraticGovernance::submit_proposal(
+            RuntimeOrigin::signed(1),
+            desc_hash()
+        ));
         assert_eq!(pallet_balances::Pallet::<Test>::reserved_balance(&1), 100);
 
-        assert_ok!(QuadraticGovernance::cancel_proposal(RuntimeOrigin::signed(1), 0));
+        assert_ok!(QuadraticGovernance::cancel_proposal(
+            RuntimeOrigin::signed(1),
+            0
+        ));
 
         // Deposit refunded
         assert_eq!(pallet_balances::Pallet::<Test>::reserved_balance(&1), 0);
@@ -327,7 +389,10 @@ fn cancel_by_proposer_refunds_deposit() {
 #[test]
 fn cancel_by_non_proposer_fails() {
     new_test_ext().execute_with(|| {
-        assert_ok!(QuadraticGovernance::submit_proposal(RuntimeOrigin::signed(1), desc_hash()));
+        assert_ok!(QuadraticGovernance::submit_proposal(
+            RuntimeOrigin::signed(1),
+            desc_hash()
+        ));
 
         assert_noop!(
             QuadraticGovernance::cancel_proposal(RuntimeOrigin::signed(2), 0),
@@ -348,7 +413,10 @@ fn integer_sqrt_is_correct() {
         assert_eq!(QuadraticGovernance::integer_sqrt(100), 10);
         assert_eq!(QuadraticGovernance::integer_sqrt(10_000), 100);
         assert_eq!(QuadraticGovernance::integer_sqrt(1_000_000), 1_000);
-        assert_eq!(QuadraticGovernance::integer_sqrt(u128::MAX), 18_446_744_073_709_551_615);
+        assert_eq!(
+            QuadraticGovernance::integer_sqrt(u128::MAX),
+            18_446_744_073_709_551_615
+        );
     });
 }
 
@@ -356,7 +424,10 @@ fn integer_sqrt_is_correct() {
 #[test]
 fn vote_fails_without_did() {
     new_test_ext().execute_with(|| {
-        assert_ok!(QuadraticGovernance::submit_proposal(RuntimeOrigin::signed(1), desc_hash()));
+        assert_ok!(QuadraticGovernance::submit_proposal(
+            RuntimeOrigin::signed(1),
+            desc_hash()
+        ));
 
         // Account 4 has no DID
         assert_noop!(
@@ -370,7 +441,10 @@ fn vote_fails_without_did() {
 #[test]
 fn finalize_fails_while_still_active() {
     new_test_ext().execute_with(|| {
-        assert_ok!(QuadraticGovernance::submit_proposal(RuntimeOrigin::signed(1), desc_hash()));
+        assert_ok!(QuadraticGovernance::submit_proposal(
+            RuntimeOrigin::signed(1),
+            desc_hash()
+        ));
 
         // Don't advance time
         assert_noop!(
