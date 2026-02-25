@@ -124,12 +124,12 @@ describe('formatBalance', () => {
 
   it('formats a positive balance', () => {
     // 1 CLAW = 10^18 planck
-    const oneClaw = BigInt(10) ** BigInt(18);
+    const oneClaw = BigInt('1000000000000000000'); // 10^18
     expect(formatBalance(oneClaw)).toBe('1.0000 CLAW');
   });
 
   it('formats fractional balance', () => {
-    const halfClaw = BigInt(5) * BigInt(10) ** BigInt(17);
+    const halfClaw = BigInt('500000000000000000'); // 5 * 10^17
     expect(formatBalance(halfClaw)).toBe('0.5000 CLAW');
   });
 
@@ -146,7 +146,7 @@ describe('formatBalance', () => {
   });
 
   it('handles large balance', () => {
-    const large = BigInt(1000) * BigInt(10) ** BigInt(18);
+    const large = BigInt('1000000000000000000000'); // 1000 * 10^18
     expect(formatBalance(large)).toBe('1000.0000 CLAW');
   });
 });
