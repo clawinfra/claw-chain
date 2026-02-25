@@ -29,7 +29,7 @@ jobs:
           targets: wasm32-unknown-unknown
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y llvm clang libclang-dev
+        run: sudo apt-get update && sudo apt-get install -y llvm clang libclang-dev protobuf-compiler
 
       - name: Cache cargo registry + build
         uses: actions/cache@v4
