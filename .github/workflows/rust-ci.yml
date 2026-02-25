@@ -27,6 +27,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
+          components: rust-src
 
       - name: Install system dependencies
         run: sudo apt-get update && sudo apt-get install -y llvm clang libclang-dev protobuf-compiler
