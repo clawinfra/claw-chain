@@ -17,6 +17,7 @@
 //! - `cancel_proposal` — Cancel a proposal (proposer only, refunds deposit)
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(deprecated, clippy::let_unit_value)]
 
 extern crate alloc;
 
@@ -49,8 +50,11 @@ pub mod pallet {
     pub type VoteWeight = u128;
 
     /// Status of a governance proposal.
-    #[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(
+        Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default,
+    )]
     pub enum ProposalStatus {
+        #[default]
         Active,
         Passed,
         Rejected,
@@ -58,12 +62,6 @@ pub mod pallet {
     }
 
     impl codec::DecodeWithMemTracking for ProposalStatus {}
-
-    impl Default for ProposalStatus {
-        fn default() -> Self {
-            ProposalStatus::Active
-        }
-    }
 
     /// A vote direction.
     #[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -335,7 +333,7 @@ pub mod pallet {
 
                 // Record the vote
                 let record = VoteRecord {
-                    vote: vote.clone(),
+                    vote,
                     weight,
                     block: Self::block_to_u32(now),
                 };

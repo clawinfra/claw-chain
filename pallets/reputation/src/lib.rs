@@ -27,6 +27,7 @@
 //! - `meets_minimum_reputation` - Check if account meets minimum reputation threshold
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(deprecated, clippy::let_unit_value)]
 
 extern crate alloc;
 
@@ -284,7 +285,7 @@ pub mod pallet {
             let reviewer = ensure_signed(origin)?;
 
             // Validation
-            ensure!(rating >= 1 && rating <= 5, Error::<T>::InvalidRating);
+            ensure!((1_u8..=5).contains(&rating), Error::<T>::InvalidRating);
             ensure!(reviewer != reviewee, Error::<T>::SelfReview);
             let bounded_comment: BoundedVec<u8, T::MaxCommentLength> =
                 comment.try_into().map_err(|_| Error::<T>::CommentTooLong)?;
@@ -382,9 +383,7 @@ pub mod pallet {
                 let new_score = if clamped_delta >= 0 {
                     old_score.saturating_add(clamped_delta as u32).min(10000)
                 } else {
-                    old_score
-                        .saturating_sub(clamped_delta.unsigned_abs())
-                        .max(0)
+                    old_score.saturating_sub(clamped_delta.unsigned_abs())
                 };
 
                 rep.score = new_score;

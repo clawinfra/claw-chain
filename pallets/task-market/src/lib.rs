@@ -27,6 +27,7 @@
 //! - `resolve_dispute` - Governance resolves a dispute
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(deprecated, clippy::let_unit_value)]
 
 extern crate alloc;
 
@@ -65,10 +66,12 @@ pub mod pallet {
         RuntimeDebug,
         TypeInfo,
         MaxEncodedLen,
+        Default,
         codec::DecodeWithMemTracking,
     )]
     pub enum TaskStatus {
         /// Accepting bids.
+        #[default]
         Open,
         /// Worker selected, task assigned.
         Assigned,
@@ -84,12 +87,6 @@ pub mod pallet {
         Cancelled,
         /// Deadline passed without completion.
         Expired,
-    }
-
-    impl Default for TaskStatus {
-        fn default() -> Self {
-            TaskStatus::Open
-        }
     }
 
     /// Core task information.

@@ -21,6 +21,7 @@
 //! - `report_inactive` - Mark a node as inactive if heartbeat expired
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(deprecated, clippy::let_unit_value)]
 
 extern crate alloc;
 
@@ -51,10 +52,12 @@ pub mod pallet {
         RuntimeDebug,
         TypeInfo,
         MaxEncodedLen,
+        Default,
         codec::DecodeWithMemTracking,
     )]
     pub enum NodeType {
         /// Full node with complete chain state.
+        #[default]
         FullNode,
         /// Validator node (may also be full node).
         Validator,
@@ -62,12 +65,6 @@ pub mod pallet {
         LightNode,
         /// Archive node with full historical state.
         ArchiveNode,
-    }
-
-    impl Default for NodeType {
-        fn default() -> Self {
-            NodeType::FullNode
-        }
     }
 
     /// Node status enum.
@@ -80,21 +77,17 @@ pub mod pallet {
         RuntimeDebug,
         TypeInfo,
         MaxEncodedLen,
+        Default,
         codec::DecodeWithMemTracking,
     )]
     pub enum NodeStatus {
         /// Node is active and healthy.
+        #[default]
         Active,
         /// Node has not sent a heartbeat in MaxHeartbeatInterval blocks.
         Inactive,
         /// Node has been deregistered by the owner.
         Deregistered,
-    }
-
-    impl Default for NodeStatus {
-        fn default() -> Self {
-            NodeStatus::Active
-        }
     }
 
     /// Core RPC node information stored on-chain.

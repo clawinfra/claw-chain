@@ -17,6 +17,7 @@
 //! - `clear_old_receipts` - Prune old receipts before a given nonce
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(deprecated, clippy::let_unit_value)]
 
 extern crate alloc;
 

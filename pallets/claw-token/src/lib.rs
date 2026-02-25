@@ -18,6 +18,7 @@
 //! - 10% team allocation (100M CLAW)
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(deprecated, clippy::let_unit_value)]
 
 extern crate alloc;
 
@@ -28,15 +29,8 @@ mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use frame_support::{
-        pallet_prelude::*,
-        traits::{Currency, ExistenceRequirement},
-    };
+    use frame_support::{pallet_prelude::*, traits::Currency};
     use frame_system::pallet_prelude::*;
-
-    /// Balance type from the currency trait.
-    type BalanceOf<T> =
-        <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
     /// The pallet's configuration trait.
     #[pallet::config]

@@ -21,6 +21,7 @@
 //! in practice while making spam economically costly. See ADR-002 for full rationale.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(deprecated, clippy::let_unit_value)]
 
 pub use pallet::*;
 
@@ -35,7 +36,7 @@ pub mod pallet {
     };
     use frame_system::pallet_prelude::*;
     use sp_runtime::{
-        traits::{CheckedAdd, Saturating, Zero},
+        traits::{Saturating, Zero},
         Perbill,
     };
 
@@ -301,7 +302,7 @@ pub mod pallet {
                 } else {
                     // Over quota — charge fee
                     let fee = Self::calculate_excess_fee(quota.stake);
-                    T::Currency::withdraw(
+                    _ = T::Currency::withdraw(
                         who,
                         fee,
                         frame_support::traits::WithdrawReasons::FEE,

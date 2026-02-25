@@ -17,6 +17,7 @@
 //! - `remove_service_endpoint` - Remove a service endpoint
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(deprecated, clippy::let_unit_value)]
 
 extern crate alloc;
 

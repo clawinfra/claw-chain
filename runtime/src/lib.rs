@@ -4,6 +4,7 @@
 //! It compiles to WASM and defines the business logic for all on-chain operations.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(deprecated)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit.
 #![recursion_limit = "256"]
 
@@ -285,7 +286,7 @@ impl pallet_session::Config for Runtime {
     type Keys = opaque::SessionKeys;
     type WeightInfo = ();
     type Currency = Balances;
-    type KeyDeposit = ConstU128<{ 1 * UNITS }>;
+    type KeyDeposit = ConstU128<UNITS>;
     type DisablingStrategy = ();
 }
 
@@ -543,7 +544,7 @@ impl pallet_gas_quota::Config for Runtime {
     type BaseFeePerTx = GasQuotaBaseFee;
     type FeeDiscountPerKStake = GasQuotaFeeDiscount;
 }
-/// Configure the Agent DID pallet (W3C DID method: did:claw:{AccountId}).
+// Configure the quadratic governance pallet.
 parameter_types! {
     pub const GovMinProposalDeposit: Balance = 100 * UNITS;      // 100 CLAW
     pub const GovVotingPeriod: BlockNumber = 50_400;             // ~7 days at 6s/block

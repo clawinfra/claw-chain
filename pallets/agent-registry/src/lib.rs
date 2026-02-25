@@ -21,6 +21,7 @@
 //! - `set_agent_status` - Change an agent's status
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(deprecated, clippy::let_unit_value)]
 
 extern crate alloc;
 
@@ -50,21 +51,17 @@ pub mod pallet {
         RuntimeDebug,
         TypeInfo,
         MaxEncodedLen,
+        Default,
         codec::DecodeWithMemTracking,
     )]
     pub enum AgentStatus {
         /// Agent is active and operational.
+        #[default]
         Active,
         /// Agent has been suspended (e.g., for misbehaviour).
         Suspended,
         /// Agent has been deregistered by the owner.
         Deregistered,
-    }
-
-    impl Default for AgentStatus {
-        fn default() -> Self {
-            AgentStatus::Active
-        }
     }
 
     /// Core agent information stored on-chain.
