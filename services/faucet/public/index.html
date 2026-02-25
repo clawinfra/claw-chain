@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClawChain Testnet Faucet</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0a0a;
+      --surface:   #111111;
+      --border:    #1e1e1e;
+      --accent:    #00D4FF;
+      --accent-dim:#0099bb;
+      --text:      #e0e0e0;
+      --muted:     #888;
+      --error:     #ff4444;
+      --success:   #00cc88;
+      --warning:   #ffaa00;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────────── */
+    .container {
+      max-width: 600px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+      flex: 1;
+    }
+
+    /* ── Header ─────────────────────────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .logo {
+      font-size: 2rem;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .logo span { color: var(--text); }
+
+    .tagline {
+      margin-top: 0.5rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    /* ── Card ───────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+
+    /* ── Input ──────────────────────────────────────────────────── */
+    .input-group {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.875rem;
+      padding: 0.75rem 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    input[type="text"]::placeholder { color: var(--muted); }
+
+    /* ── Buttons ────────────────────────────────────────────────── */
+    .btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: #000;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 700;
+      padding: 0.75rem 1.25rem;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    .btn:hover:not(:disabled) { background: var(--accent-dim); }
+    .btn:active:not(:disabled) { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-outline:hover:not(:disabled) {
+      background: rgba(0, 212, 255, 0.08);
+    }
+
+    .btn-sm {
+      padding: 0.5rem 0.875rem;
+      font-size: 0.8rem;
+    }
+
+    /* ── GitHub Boost row ──────────────────────────────────────── */
+    .boost-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .boost-info {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .boost-info strong { color: var(--text); }
+
+    .github-user {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--success);
+    }
+
+    /* ── Result / Status ────────────────────────────────────────── */
+    .result {
+      margin-top: 1.25rem;
+      padding: 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      display: none;
+    }
+
+    .result.success { background: rgba(0, 204, 136, 0.08); border: 1px solid var(--success); }
+    .result.error   { background: rgba(255, 68, 68, 0.08);  border: 1px solid var(--error); }
+    .result.warning { background: rgba(255, 170, 0, 0.08);  border: 1px solid var(--warning); }
+    .result.visible { display: block; }
+
+    .result .label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.35rem;
+    }
+
+    .result.success .label { color: var(--success); }
+    .result.error   .label { color: var(--error); }
+    .result.warning .label { color: var(--warning); }
+
+    .hash-link {
+      color: var(--accent);
+      text-decoration: none;
+      word-break: break-all;
+      font-size: 0.8rem;
+    }
+
+    .hash-link:hover { text-decoration: underline; }
+
+    .countdown {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--warning);
+      margin-top: 0.35rem;
+    }
+
+    /* ── Stats ──────────────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-top: 0.25rem;
+    }
+
+    /* ── Footer ─────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Spinner ─────────────────────────────────────────────────── */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(0, 0, 0, 0.3);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Responsive ─────────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .input-group { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- ── Header ─────────────────────────────────────────────── -->
+    <header>
+      <div class="logo">Claw<span>Chain</span></div>
+      <div class="tagline">Testnet Faucet — Get free CLAW tokens for development</div>
+    </header>
+
+    <!-- ── Faucet Card ─────────────────────────────────────────── -->
+    <div class="card">
+      <div class="card-title">Request Testnet CLAW</div>
+
+      <div class="input-group">
+        <input
+          type="text"
+          id="address-input"
+          placeholder="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="btn" id="drip-btn" onclick="requestDrip()">
+          Request 100 CLAW
+        </button>
+      </div>
+
+      <!-- GitHub Boost row -->
+      <div class="boost-row">
+        <div class="boost-info">
+          <span id="github-status-text">
+            Connect GitHub for <strong>1000 CLAW</strong> (10× boost)
+          </span>
+        </div>
+        <div id="github-auth-section">
+          <button class="btn btn-outline btn-sm" id="github-btn" onclick="handleGitHubAction()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+            </svg>
+            GitHub Boost ×10
+          </button>
+        </div>
+        <div id="github-user-section" class="github-user" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+          <span id="github-username"></span>
+          <a href="/auth/logout" style="color:var(--muted);text-decoration:none;font-size:0.75rem">
+            (logout)
+          </a>
+        </div>
+      </div>
+
+      <!-- Result display -->
+      <div id="result" class="result">
+        <div class="label" id="result-label"></div>
+        <div id="result-body"></div>
+      </div>
+    </div>
+
+    <!-- ── Stats Card ───────────────────────────────────────────── -->
+    <div class="card">
+      <div class="card-title">Faucet Stats</div>
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="stat-value" id="stat-balance">—</div>
+          <div class="stat-label">Balance (CLAW)</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-drips">—</div>
+          <div class="stat-label">Total Drips</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-addresses">—</div>
+          <div class="stat-label">Unique Wallets</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <a href="https://clawchain.win" target="_blank">ClawChain</a> testnet faucet ·
+    <a href="https://github.com/clawinfra/claw-chain" target="_blank">GitHub</a> ·
+    Limits: 100 CLAW / 24h · 1000 CLAW with GitHub OAuth
+  </footer>
+
+  <script>
+    // ── Constants ──────────────────────────────────────────────────────────
+    const PLANCK_PER_CLAW = 1_000_000_000_000n; // 10^12
+
+    // ── State ──────────────────────────────────────────────────────────────
+    let countdownTimer = null;
+    let isGitHubAuthed = false;
+    let githubUsername = '';
+
+    // ── Init ───────────────────────────────────────────────────────────────
+    window.addEventListener('DOMContentLoaded', () => {
+      checkAuth();
+      checkStatus();
+
+      // Auto-trigger boost if redirected after OAuth
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('boost') === '1') {
+        history.replaceState({}, '', '/');
+        // Small delay to let checkAuth() populate isGitHubAuthed
+        setTimeout(() => {
+          const addr = document.getElementById('address-input').value.trim();
+          if (addr) requestDrip();
+        }, 500);
+      }
+    });
+
+    // ── Auth ───────────────────────────────────────────────────────────────
+    async function checkAuth() {
+      try {
+        const res = await fetch('/auth/me');
+        const data = await res.json();
+        isGitHubAuthed = data.authenticated;
+        githubUsername = data.username || '';
+
+        const authSection = document.getElementById('github-auth-section');
+        const userSection = document.getElementById('github-user-section');
+        const statusText  = document.getElementById('github-status-text');
+        const dripBtn     = document.getElementById('drip-btn');
+
+        if (isGitHubAuthed) {
+          authSection.style.display = 'none';
+          userSection.style.display = 'flex';
+          document.getElementById('github-username').textContent = '@' + githubUsername;
+          statusText.innerHTML = `Boosted! You'll receive <strong>1000 CLAW</strong>`;
+          dripBtn.textContent = 'Request 1000 CLAW';
+        } else {
+          authSection.style.display = 'block';
+          userSection.style.display = 'none';
+          statusText.innerHTML = `Connect GitHub for <strong>1000 CLAW</strong> (10× boost)`;
+          dripBtn.textContent = 'Request 100 CLAW';
+        }
+      } catch (e) {
+        console.error('Auth check failed', e);
+      }
+    }
+
+    function handleGitHubAction() {
+      // Store address in sessionStorage so we can restore it after redirect
+      const addr = document.getElementById('address-input').value.trim();
+      if (addr) sessionStorage.setItem('faucetAddress', addr);
+      window.location.href = '/auth/github';
+    }
+
+    // Restore address after redirect
+    const savedAddr = sessionStorage.getItem('faucetAddress');
+    if (savedAddr) {
+      document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('address-input').value = savedAddr;
+        sessionStorage.removeItem('faucetAddress');
+      });
+    }
+
+    // ── Status ─────────────────────────────────────────────────────────────
+    async function checkStatus() {
+      try {
+        const res = await fetch('/status');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Convert planck balance to CLAW
+        const balanceClaw = planckToClaw(BigInt(data.balance || '0'));
+        document.getElementById('stat-balance').textContent  = formatClaw(balanceClaw);
+        document.getElementById('stat-drips').textContent    = formatNumber(data.total_drips);
+        document.getElementById('stat-addresses').textContent = formatNumber(data.unique_addresses);
+      } catch (e) {
+        console.error('Status check failed', e);
+      }
+    }
+
+    // ── Request Drip ───────────────────────────────────────────────────────
+    async function requestDrip() {
+      const addressInput = document.getElementById('address-input');
+      const dripBtn      = document.getElementById('drip-btn');
+      const address      = addressInput.value.trim();
+
+      if (!address) {
+        showError('Please enter your SS58 wallet address.');
+        return;
+      }
+
+      // Loading state
+      dripBtn.disabled = true;
+      dripBtn.innerHTML = '<span class="spinner"></span>Sending...';
+      clearResult();
+
+      try {
+        const res = await fetch('/faucet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address }),
+        });
+
+        const data = await res.json();
+
+        if (res.status === 200) {
+          showSuccess(data);
+          checkStatus(); // Refresh stats
+        } else if (res.status === 429 && data.next_drip_at) {
+          showCooldown(data);
+        } else {
+          showError(data.error || 'An unexpected error occurred. Please try again.');
+        }
+      } catch (e) {
+        showError('Network error. Please check your connection and try again.');
+      } finally {
+        dripBtn.disabled = false;
+        dripBtn.textContent = isGitHubAuthed ? 'Request 1000 CLAW' : 'Request 100 CLAW';
+      }
+    }
+
+    // ── Result helpers ─────────────────────────────────────────────────────
+    function clearResult() {
+      if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+      const el = document.getElementById('result');
+      el.className = 'result';
+      el.querySelector('#result-label').textContent = '';
+      el.querySelector('#result-body').innerHTML = '';
+    }
+
+    function showSuccess(data) {
+      const el    = document.getElementById('result');
+      const label = document.getElementById('result-label');
+      const body  = document.getElementById('result-body');
+
+      el.className = 'result success visible';
+      label.textContent = '✓ Success';
+
+      const explorerUrl = `https://explorer.clawchain.win/tx/${data.tx_hash}`;
+      body.innerHTML = `
+        <div>Sent <strong>${escapeHtml(data.amount)}</strong> to your wallet.</div>
+        <div style="margin-top:0.5rem;font-size:0.8rem;color:var(--muted)">TX Hash:</div>
+        <a class="hash-link" href="${escapeHtml(explorerUrl)}" target="_blank" rel="noopener">
+          ${escapeHtml(data.tx_hash)}
+        </a>
+        <div style="margin-top:0.5rem;font-size:0.78rem;color:var(--muted)">
+          Next drip available: ${formatDate(data.next_drip_at)}
+        </div>
+      `;
+    }
+
+    function showCooldown(data) {
+      const el    = document.getElementById('result');
+      const label = document.getElementById('result-label');
+      const body  = document.getElementById('result-body');
+
+      el.className = 'result warning visible';
+      label.textContent = '⏳ Cooldown Active';
+
+      const nextDripAt = new Date(data.next_drip_at).getTime();
+
+      function render() {
+        const remaining = nextDripAt - Date.now();
+        if (remaining <= 0) {
+          body.innerHTML = `<div>Ready! You can request again now.</div>`;
+          if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+          return;
+        }
+        body.innerHTML = `
+          <div>This address already received CLAW. Next drip in:</div>
+          <div class="countdown">${formatDuration(remaining)}</div>
+          <div style="margin-top:0.35rem;font-size:0.78rem;color:var(--muted)">
+            Available at ${formatDate(data.next_drip_at)}
+          </div>
+        `;
+      }
+
+      render();
+      if (countdownTimer) clearInterval(countdownTimer);
+      countdownTimer = setInterval(render, 1000);
+    }
+
+    function showError(message) {
+      const el    = document.getElementById('result');
+      const label = document.getElementById('result-label');
+      const body  = document.getElementById('result-body');
+
+      el.className = 'result error visible';
+      label.textContent = '✗ Error';
+      body.textContent = message;
+    }
+
+    // ── Formatting helpers ─────────────────────────────────────────────────
+    function planckToClaw(planck) {
+      return Number(planck) / Number(PLANCK_PER_CLAW);
+    }
+
+    function formatClaw(value) {
+      if (value >= 1_000_000) return (value / 1_000_000).toFixed(1) + 'M';
+      if (value >= 1_000)     return (value / 1_000).toFixed(1) + 'K';
+      return value.toFixed(2);
+    }
+
+    function formatNumber(n) {
+      if (n == null) return '—';
+      return n.toLocaleString();
+    }
+
+    function formatDate(iso) {
+      return new Date(iso).toLocaleString(undefined, {
+        month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      });
+    }
+
+    function formatDuration(ms) {
+      const s = Math.floor(ms / 1000);
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      return [h, m, sec].map(v => String(v).padStart(2, '0')).join(':');
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ── Enter key ─────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('address-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') requestDrip();
+      });
+    });
+  </script>
+</body>
+</html>
