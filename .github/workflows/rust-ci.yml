@@ -45,9 +45,8 @@ jobs:
 
       - name: cargo check (native)
         run: cargo check --workspace
-
-      - name: cargo check (WASM runtime)
-        run: cargo check -p clawchain-runtime --target wasm32-unknown-unknown
+        # Note: WASM runtime is compiled by substrate-wasm-builder in build.rs
+        # during native build, so a separate wasm32 target check is not needed.
 
   test:
     name: cargo test
