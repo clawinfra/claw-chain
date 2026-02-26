@@ -1,0 +1,79 @@
+# deploy/clawchain.service — ClawChain PoA Validator Node
+#
+# Production systemd unit for a ClawChain validator node.
+#
+# Installation (via setup-node.sh or manually):
+#   sudo cp deploy/clawchain.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now clawchain
+#
+# Configuration:
+#   Edit /etc/clawchain/env before starting the unit.
+#   The EnvironmentFile overrides any default values listed below.
+#
+# Logs:
+#   journalctl -u clawchain -f
+#
+# Metrics (Prometheus):
+#   http://localhost:9615/metrics
+
+[Unit]
+Description=ClawChain PoA Validator Node
+Documentation=https://github.com/clawinfra/claw-chain
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=clawchain
+Group=clawchain
+WorkingDirectory=/var/lib/clawchain
+
+# ── Authority / key configuration ────────────────────────────────────────────
+# Override in /etc/clawchain/env (never in this unit file — it is tracked in git).
+EnvironmentFile=-/etc/clawchain/env
+
+# ── Binary and arguments ──────────────────────────────────────────────────────
+ExecStart=/usr/local/bin/clawchain-node \
+  --chain mainnet \
+  --validator \
+  --base-path /var/lib/clawchain/data \
+  --keystore-path /var/lib/clawchain/keystore \
+  --name ${CLAWCHAIN_NODE_NAME:-clawchain-validator} \
+  --port ${CLAWCHAIN_P2P_PORT:-30333} \
+  --rpc-port ${CLAWCHAIN_RPC_PORT:-9944} \
+  --prometheus-port ${CLAWCHAIN_PROMETHEUS_PORT:-9615} \
+  --prometheus-external \
+  --log info,grandpa=debug,aura=debug \
+  --bootnodes ${CLAWCHAIN_BOOTNODES:-} \
+  --telemetry-url "wss://telemetry.polkadot.io/submit/ 0"
+
+# ── Restart policy ────────────────────────────────────────────────────────────
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=60
+
+# ── Resource limits ───────────────────────────────────────────────────────────
+LimitNOFILE=65536
+LimitNPROC=65536
+
+# ── Security hardening ────────────────────────────────────────────────────────
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/clawchain
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+
+# Allow the node to bind low ports only if needed (remove if port > 1024)
+# AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target
