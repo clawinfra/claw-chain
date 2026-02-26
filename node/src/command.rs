@@ -1,4 +1,7 @@
 //! ClawChain command implementation.
+//!
+//! Routes CLI subcommands to the appropriate handler and wires the
+//! `--chain` flag to the known chain specs.
 
 use crate::{
     chain_spec,
@@ -35,8 +38,14 @@ impl SubstrateCli for Cli {
 
     fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
         Ok(match id {
+            // Development: single Alice authority, instant finality.
             "dev" | "" => Box::new(chain_spec::development_config()?),
+            // Local testnet: Alice + Bob, useful for multi-validator testing.
             "local" => Box::new(chain_spec::local_testnet_config()?),
+            // Mainnet: reads authority config from $CLAWCHAIN_AUTHORITIES_FILE
+            // or ./authorities.json.  Uses ChainType::Live.
+            "mainnet" => Box::new(chain_spec::mainnet_config()?),
+            // Fall through to a raw chain-spec JSON file path.
             path => Box::new(chain_spec::ChainSpec::from_json_file(
                 std::path::PathBuf::from(path),
             )?),
@@ -50,10 +59,12 @@ pub fn run() -> sc_cli::Result<()> {
 
     match &cli.subcommand {
         Some(Subcommand::Key(cmd)) => cmd.run(&cli),
+
         Some(Subcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| cmd.run(config.chain_spec, config.network))
         }
+
         Some(Subcommand::CheckBlock(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
@@ -66,6 +77,7 @@ pub fn run() -> sc_cli::Result<()> {
                 Ok((cmd.run(client, import_queue), task_manager))
             })
         }
+
         Some(Subcommand::ExportBlocks(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
@@ -77,6 +89,7 @@ pub fn run() -> sc_cli::Result<()> {
                 Ok((cmd.run(client, config.database), task_manager))
             })
         }
+
         Some(Subcommand::ExportState(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
@@ -88,6 +101,7 @@ pub fn run() -> sc_cli::Result<()> {
                 Ok((cmd.run(client, config.chain_spec), task_manager))
             })
         }
+
         Some(Subcommand::ImportBlocks(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
@@ -100,10 +114,12 @@ pub fn run() -> sc_cli::Result<()> {
                 Ok((cmd.run(client, import_queue), task_manager))
             })
         }
+
         Some(Subcommand::PurgeChain(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| cmd.run(config.database))
         }
+
         Some(Subcommand::Revert(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
@@ -116,10 +132,19 @@ pub fn run() -> sc_cli::Result<()> {
                 Ok((cmd.run(client, backend, None), task_manager))
             })
         }
+
         Some(Subcommand::ChainInfo(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| cmd.run::<clawchain_runtime::opaque::Block>(&config))
         }
+
+        // ── generate-keys ──────────────────────────────────────────────────────
+        //
+        // Pure key-generation — no chain state or database access required.
+        // We skip the normal runner setup and execute directly.
+        Some(Subcommand::GenerateKeys(cmd)) => cmd.run(),
+
+        // ── Default: run the node ──────────────────────────────────────────────
         None => {
             let runner = cli.create_runner(&cli.run)?;
             runner.run_node_until_exit(|config| async move {
