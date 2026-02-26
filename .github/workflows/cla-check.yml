@@ -17,11 +17,20 @@ jobs:
   cla-check:
     name: Check CLA signature
     runs-on: ubuntu-latest
+    # Only run on actual PR events or comments on PRs (not issue comments)
+    if: |
+      github.event_name == 'pull_request_target' ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request)
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: CLA Assistant
+        # continue-on-error because the action may fail to commit the signatures
+        # file when CLA_PAT is not configured or the token lacks write access to
+        # the protected main branch.  The real signature check is done in the next
+        # step via direct file read.
+        continue-on-error: true
         uses: contributor-assistant/github-action@v2.3.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -31,63 +40,92 @@ jobs:
           path-to-document: 'https://github.com/clawinfra/claw-chain/blob/main/CLA.md'
           branch: 'main'
           allowlist: 'bot*,dependabot*,renovate*,github-actions*'
-          # Store signatures in current repo for now
-          # remote-organization-name: 'clawinfra'
-          # remote-repository-name: 'cla-signatures'
           create-file-commit-message: 'chore: Add CLA signature for $pullRequestNo'
           signed-commit-message: 'I have read and agree to the CLA'
           custom-notsigned-prcomment: |
             Thank you for your contribution! 🦞
-            
+
             Before we can merge this PR, we need you to sign the **Contributor License Agreement (CLA)**.
-            
+
             **Why?**
             - Protects the project legally
             - Clarifies intellectual property rights
             - Required for airdrop eligibility
-            
+
             **How to sign:**
             Simply comment on this PR with:
             ```
             I have read and agree to the CLA
             ```
-            
+
             **Read the CLA:** [CLA.md](https://github.com/clawinfra/claw-chain/blob/main/CLA.md)
-            
+
             Once signed, you'll be added to our CLA registry and this check will pass. ✅
           custom-pr-sign-comment: 'I have read and agree to the CLA'
           custom-allsigned-prcomment: |
             ✅ **All contributors have signed the CLA!**
-            
+
             Thank you for completing this important step. Your contribution is now eligible for:
             - Merge into the codebase
             - Airdrop allocation tracking
             - Recognition in CONTRIBUTORS.md
-            
+
             A maintainer will review your PR shortly. 🦞⛓️
           lock-pullrequest-aftermerge: false
           use-dco-flag: false
 
       - name: Update commit status
+        # Always run so we can set a correct CLA commit status even when the
+        # CLA Assistant step fails due to write-permission errors.
         if: always()
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { data: signatures } = await github.rest.repos.getContent({
-              owner: 'clawinfra',
-              repo: 'cla-signatures',
+            // Resolve the PR number and head SHA for both event types.
+            let prNumber, headSha;
+            if (context.eventName === 'pull_request_target') {
+              prNumber = context.payload.pull_request.number;
+              headSha  = context.payload.pull_request.head.sha;
+            } else if (context.eventName === 'issue_comment') {
+              prNumber = context.payload.issue.number;
+              // Fetch the PR to get the current head SHA.
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+              });
+              headSha = pr.head.sha;
+            } else {
+              return;
+            }
+
+            // Read signatures from the current repo (claw-chain), not a separate one.
+            const { data: fileData } = await github.rest.repos.getContent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
               path: '.github/cla-signatures.json',
+              ref: 'main',
             }).catch(() => ({ data: null }));
-            
-            const author = context.payload.pull_request.user.login;
-            const signed = signatures && JSON.parse(Buffer.from(signatures.content, 'base64').toString()).signedContributors.includes(author);
-            
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+            const author = pr.user.login;
+
+            let signed = false;
+            if (fileData) {
+              const json = JSON.parse(Buffer.from(fileData.content, 'base64').toString());
+              signed = (json.signedContributors || []).includes(author);
+            }
+
             await github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              sha: context.payload.pull_request.head.sha,
+              sha: headSha,
               state: signed ? 'success' : 'pending',
-              description: signed ? 'CLA signed' : 'CLA signature required',
-              context: 'CLA'
+              description: signed ? 'CLA signed ✅' : 'CLA signature required',
+              context: 'CLA',
             });
