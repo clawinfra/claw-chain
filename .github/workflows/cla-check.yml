@@ -3,9 +3,13 @@ name: CLA Check
 on:
   pull_request_target:
     types: [opened, synchronize, reopened]
+  # Required so that CLA Assistant can process "I have read and agree to the CLA"
+  # comments and record the contributor's signature without a new push.
+  issue_comment:
+    types: [created]
 
 permissions:
-  contents: read
+  contents: write  # needed to commit cla-signatures.json
   pull-requests: write
   statuses: write
 
