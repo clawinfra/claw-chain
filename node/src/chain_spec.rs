@@ -154,31 +154,24 @@ pub fn encode_hex(bytes: &[u8]) -> String {
 /// Parse an SS58-encoded [`AccountId`].
 pub fn parse_account_id(ss58: &str) -> Result<AccountId, String> {
     use sp_core::crypto::Ss58Codec;
-    AccountId::from_ss58check(ss58)
-        .map_err(|e| format!("Invalid SS58 address '{}': {:?}", ss58, e))
+    AccountId::from_ss58check(ss58).map_err(|e| format!("Invalid SS58 address '{}': {:?}", ss58, e))
 }
 
 /// Parse a hex-encoded Aura (sr25519) authority ID.
 pub fn parse_aura_id(hex: &str) -> Result<AuraId, String> {
     let bytes = decode_hex(hex)?;
-    let arr: [u8; 32] = bytes.try_into().map_err(|_| {
-        format!(
-            "Aura key '{}' must decode to exactly 32 bytes",
-            hex
-        )
-    })?;
+    let arr: [u8; 32] = bytes
+        .try_into()
+        .map_err(|_| format!("Aura key '{}' must decode to exactly 32 bytes", hex))?;
     Ok(AuraId::unchecked_from(arr))
 }
 
 /// Parse a hex-encoded GRANDPA (ed25519) authority ID.
 pub fn parse_grandpa_id(hex: &str) -> Result<GrandpaId, String> {
     let bytes = decode_hex(hex)?;
-    let arr: [u8; 32] = bytes.try_into().map_err(|_| {
-        format!(
-            "GRANDPA key '{}' must decode to exactly 32 bytes",
-            hex
-        )
-    })?;
+    let arr: [u8; 32] = bytes
+        .try_into()
+        .map_err(|_| format!("GRANDPA key '{}' must decode to exactly 32 bytes", hex))?;
     Ok(GrandpaId::unchecked_from(arr))
 }
 
@@ -508,12 +501,18 @@ mod tests {
 
     #[test]
     fn decode_hex_with_prefix() {
-        assert_eq!(decode_hex("0xdeadbeef").unwrap(), vec![0xde, 0xad, 0xbe, 0xef]);
+        assert_eq!(
+            decode_hex("0xdeadbeef").unwrap(),
+            vec![0xde, 0xad, 0xbe, 0xef]
+        );
     }
 
     #[test]
     fn decode_hex_without_prefix() {
-        assert_eq!(decode_hex("deadbeef").unwrap(), vec![0xde, 0xad, 0xbe, 0xef]);
+        assert_eq!(
+            decode_hex("deadbeef").unwrap(),
+            vec![0xde, 0xad, 0xbe, 0xef]
+        );
     }
 
     #[test]
@@ -554,7 +553,11 @@ mod tests {
         let result = parse_account_id("not_a_valid_ss58_address");
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert!(err.contains("SS58"), "Error should mention SS58; got: {}", err);
+        assert!(
+            err.contains("SS58"),
+            "Error should mention SS58; got: {}",
+            err
+        );
     }
 
     // ── parse_aura_id ─────────────────────────────────────────────────────────
@@ -570,7 +573,11 @@ mod tests {
         let result = parse_aura_id("0xdeadbeef");
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert!(err.contains("32 bytes"), "Error should mention 32 bytes; got: {}", err);
+        assert!(
+            err.contains("32 bytes"),
+            "Error should mention 32 bytes; got: {}",
+            err
+        );
     }
 
     #[test]
@@ -605,7 +612,11 @@ mod tests {
             "500000000000000000000",
         );
         let result = parse_authorities_config(&json);
-        assert!(result.is_ok(), "Should parse valid config: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Should parse valid config: {:?}",
+            result.err()
+        );
         let (authorities, _sudo, endowed) = result.unwrap();
         assert_eq!(authorities.len(), 1);
         assert_eq!(endowed.len(), 1);
@@ -750,7 +761,11 @@ mod tests {
         let result = parse_authorities_config(&json);
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert!(err.contains("balance"), "Error should mention balance; got: {}", err);
+        assert!(
+            err.contains("balance"),
+            "Error should mention balance; got: {}",
+            err
+        );
     }
 
     #[test]

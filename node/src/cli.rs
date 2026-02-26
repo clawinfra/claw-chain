@@ -147,7 +147,10 @@ impl GenerateKeysCmd {
 }
 
 /// Write `content` to `path` with restricted permissions (0o600 on Unix).
-fn write_keys_file(path: &std::path::Path, content: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn write_keys_file(
+    path: &std::path::Path,
+    content: &str,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     use std::io::Write as _;
 
     let mut file = {
@@ -215,14 +218,21 @@ mod tests {
         let (_, aura_phrase, _) = sr25519::Pair::generate_with_phrase(None);
         let (_, grandpa_phrase, _) = ed25519::Pair::generate_with_phrase(None);
         assert!(!aura_phrase.is_empty(), "Aura phrase must not be empty");
-        assert!(!grandpa_phrase.is_empty(), "GRANDPA phrase must not be empty");
+        assert!(
+            !grandpa_phrase.is_empty(),
+            "GRANDPA phrase must not be empty"
+        );
     }
 
     #[test]
     fn generated_phrase_is_twelve_words() {
         let (_, phrase, _) = sr25519::Pair::generate_with_phrase(None);
         let words: Vec<&str> = phrase.split_whitespace().collect();
-        assert_eq!(words.len(), 12, "Generated phrase should be 12 words (BIP39)");
+        assert_eq!(
+            words.len(),
+            12,
+            "Generated phrase should be 12 words (BIP39)"
+        );
     }
 
     #[test]
@@ -285,8 +295,8 @@ mod tests {
         );
 
         // File must exist and contain valid JSON
-        let content = std::fs::read_to_string(&output_path)
-            .expect("Key file should have been created");
+        let content =
+            std::fs::read_to_string(&output_path).expect("Key file should have been created");
         let json: serde_json::Value =
             serde_json::from_str(&content).expect("Key file should contain valid JSON");
 
@@ -314,7 +324,10 @@ mod tests {
             "GRANDPA public key should be 0x-prefixed hex"
         );
         assert!(
-            !json["aura"]["secret_phrase"].as_str().unwrap_or("").is_empty(),
+            !json["aura"]["secret_phrase"]
+                .as_str()
+                .unwrap_or("")
+                .is_empty(),
             "Aura secret phrase should not be empty"
         );
         assert!(
@@ -362,26 +375,26 @@ mod tests {
         let path1 = tmp_dir.join("claw_keys_unique_test_1.json");
         let path2 = tmp_dir.join("claw_keys_unique_test_2.json");
 
-        let _ = GenerateKeysCmd { output: Some(path1.clone()) }.run();
-        let _ = GenerateKeysCmd { output: Some(path2.clone()) }.run();
+        let _ = GenerateKeysCmd {
+            output: Some(path1.clone()),
+        }
+        .run();
+        let _ = GenerateKeysCmd {
+            output: Some(path2.clone()),
+        }
+        .run();
 
-        let json1: serde_json::Value = serde_json::from_str(
-            &std::fs::read_to_string(&path1).unwrap(),
-        )
-        .unwrap();
-        let json2: serde_json::Value = serde_json::from_str(
-            &std::fs::read_to_string(&path2).unwrap(),
-        )
-        .unwrap();
+        let json1: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&path1).unwrap()).unwrap();
+        let json2: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&path2).unwrap()).unwrap();
 
         assert_ne!(
-            json1["aura"]["public_key"],
-            json2["aura"]["public_key"],
+            json1["aura"]["public_key"], json2["aura"]["public_key"],
             "Two generate-keys runs should produce different Aura keys"
         );
         assert_ne!(
-            json1["grandpa"]["public_key"],
-            json2["grandpa"]["public_key"],
+            json1["grandpa"]["public_key"], json2["grandpa"]["public_key"],
             "Two generate-keys runs should produce different GRANDPA keys"
         );
 

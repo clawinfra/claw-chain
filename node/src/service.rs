@@ -31,6 +31,7 @@ use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_consensus_grandpa::SharedVoterState;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryWorker};
+use sp_blockchain::HeaderBackend;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 use std::{sync::Arc, time::Duration};
 
@@ -95,8 +96,7 @@ pub fn new_partial(
         .transpose()?;
 
     // ── Executor + client ──────────────────────────────────────────────────────
-    let executor =
-        sc_service::new_wasm_executor::<sp_io::SubstrateHostFunctions>(&config.executor);
+    let executor = sc_service::new_wasm_executor::<sp_io::SubstrateHostFunctions>(&config.executor);
 
     let (client, backend, keystore_container, task_manager) =
         sc_service::new_full_parts::<Block, RuntimeApi, _>(
@@ -204,14 +204,12 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
     // different chains (mainnet vs testnet) cannot accidentally peer with each
     // other over the GRANDPA gossip channel.
     let genesis_hash = client
-        .block_hash(0)
+        .hash(0u32.into())
         .ok()
         .flatten()
         .expect("Genesis block always exists; qed");
-    let grandpa_protocol_name = sc_consensus_grandpa::protocol_standard_name(
-        &genesis_hash,
-        &config.chain_spec,
-    );
+    let grandpa_protocol_name =
+        sc_consensus_grandpa::protocol_standard_name(&genesis_hash, &config.chain_spec);
 
     // ── Network configuration ──────────────────────────────────────────────────
     let mut net_config = sc_network::config::FullNetworkConfiguration::<
@@ -220,13 +218,25 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
         sc_network::NetworkWorker<Block, <Block as sp_runtime::traits::Block>::Hash>,
     >::new(&config.network, config.prometheus_registry().cloned());
 
-    // Register the GRANDPA notification protocol so that peers can exchange
-    // votes and justifications.
-    net_config.add_notification_protocol(sc_consensus_grandpa::grandpa_peers_set_config(
-        grandpa_protocol_name.clone(),
-    ));
+    // Notification metrics are shared between the GRANDPA gossip sub-protocol
+    // and the main network worker.
+    let notification_metrics = sc_network::NotificationMetrics::new(config.prometheus_registry());
 
-    let metrics = sc_network::NotificationMetrics::new(config.prometheus_registry());
+    // Register the GRANDPA notification protocol so that peers can exchange
+    // votes and justifications.  `grandpa_peers_set_config` now requires the
+    // peer-store handle and notification metrics in addition to the protocol
+    // name, and returns the notification service that must be forwarded to the
+    // GRANDPA voter via `GrandpaParams::notification_service`.
+    let (grandpa_peers_config, grandpa_notification_service) =
+        sc_consensus_grandpa::grandpa_peers_set_config::<
+            Block,
+            sc_network::NetworkWorker<Block, <Block as sp_runtime::traits::Block>::Hash>,
+        >(
+            grandpa_protocol_name.clone(),
+            notification_metrics.clone(),
+            net_config.peer_store_handle(),
+        );
+    net_config.add_notification_protocol(grandpa_peers_config);
 
     let (network, system_rpc_tx, tx_handler_controller, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
@@ -239,7 +249,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
             block_announce_validator_builder: None,
             warp_sync_config: None,
             block_relay: None,
-            metrics,
+            metrics: notification_metrics,
         })?;
 
     // ── Extract config fields before it is consumed by spawn_tasks ────────────
@@ -360,13 +370,13 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
                 link: grandpa_link,
                 network,
                 sync: sync_service,
+                notification_service: grandpa_notification_service,
                 voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
                 prometheus_registry,
                 shared_voter_state: SharedVoterState::empty(),
                 telemetry: telemetry.as_ref().map(|x: &Telemetry| x.handle()),
-                offchain_tx_pool_factory: sc_transaction_pool_api::OffchainTransactionPoolFactory::new(
-                    transaction_pool,
-                ),
+                offchain_tx_pool_factory:
+                    sc_transaction_pool_api::OffchainTransactionPoolFactory::new(transaction_pool),
             })?;
 
         task_manager
