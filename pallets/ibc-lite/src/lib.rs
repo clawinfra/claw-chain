@@ -46,7 +46,7 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-use alloc::vec::Vec;
+use alloc::{format, vec::Vec};
 use frame_support::pallet_prelude::*;
 use frame_system::pallet_prelude::*;
 use sp_core::H256;
