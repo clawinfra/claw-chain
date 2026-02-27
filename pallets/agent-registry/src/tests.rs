@@ -35,6 +35,25 @@ impl pallet_agent_registry::Config for Test {
     type MaxDidLength = ConstU32<256>;
     type MaxMetadataLength = ConstU32<4096>;
     type MaxAgentsPerOwner = ConstU32<10>;
+    type ReputationOracle = SettableReputationOracle;
+}
+
+// Thread-local storage for setting the oracle account per-test
+thread_local! {
+    static REPUTATION_ORACLE: std::cell::RefCell<Option<u64>> = std::cell::RefCell::new(None);
+}
+
+// Helper to set the oracle for a test
+pub fn set_oracle(account: Option<u64>) {
+    REPUTATION_ORACLE.with(|f| *f.borrow_mut() = account);
+}
+
+// Mock Get implementation for ReputationOracle
+pub struct SettableReputationOracle;
+impl frame_support::traits::Get<Option<u64>> for SettableReputationOracle {
+    fn get() -> Option<u64> {
+        REPUTATION_ORACLE.with(|f| *f.borrow())
+    }
 }
 
 // Build test externalities from genesis storage.
@@ -551,6 +570,113 @@ fn update_reputation_requires_root() {
         let agent = AgentRegistry::<Test>::get(0).unwrap();
         assert_eq!(agent.reputation, 5100);
     });
+}
+
+// ========== Oracle Mode Tests ==========
+
+#[test]
+fn update_reputation_oracle_can_update() {
+    set_oracle(Some(100)); // Configure account 100 as oracle
+    new_test_ext().execute_with(|| {
+        // Register an agent
+        assert_ok!(AgentRegistryPallet::register_agent(
+            account(1),
+            b"did:claw:test".to_vec(),
+            b"{}".to_vec()
+        ));
+
+        // Oracle (account 100) should be able to update reputation
+        assert_ok!(AgentRegistryPallet::update_reputation(account(100), 0, 1000));
+        let agent = AgentRegistry::<Test>::get(0).unwrap();
+        assert_eq!(agent.reputation, 6000);
+
+        // Oracle can also decrease reputation
+        assert_ok!(AgentRegistryPallet::update_reputation(account(100), 0, -500));
+        let agent = AgentRegistry::<Test>::get(0).unwrap();
+        assert_eq!(agent.reputation, 5500);
+    });
+    set_oracle(None); // Reset
+}
+
+#[test]
+fn update_reputation_non_oracle_fails() {
+    set_oracle(Some(100)); // Configure account 100 as oracle
+    new_test_ext().execute_with(|| {
+        // Register an agent
+        assert_ok!(AgentRegistryPallet::register_agent(
+            account(1),
+            b"did:claw:test".to_vec(),
+            b"{}".to_vec()
+        ));
+
+        // Non-oracle accounts should fail with NotAuthorized
+        assert_noop!(
+            AgentRegistryPallet::update_reputation(account(1), 0, 100),
+            crate::Error::<Test>::NotAuthorized
+        );
+        assert_noop!(
+            AgentRegistryPallet::update_reputation(account(2), 0, 100),
+            crate::Error::<Test>::NotAuthorized
+        );
+
+        // Even root should fail in oracle mode (not the configured oracle)
+        assert_noop!(
+            AgentRegistryPallet::update_reputation(root(), 0, 100),
+            crate::Error::<Test>::NotAuthorized
+        );
+    });
+    set_oracle(None); // Reset
+}
+
+#[test]
+fn update_reputation_oracle_emits_event() {
+    set_oracle(Some(100)); // Configure account 100 as oracle
+    new_test_ext().execute_with(|| {
+        assert_ok!(AgentRegistryPallet::register_agent(
+            account(1),
+            b"did:claw:test".to_vec(),
+            b"{}".to_vec()
+        ));
+
+        assert_ok!(AgentRegistryPallet::update_reputation(account(100), 0, 500));
+
+        System::assert_has_event(
+            Event::<Test>::ReputationChanged {
+                agent_id: 0,
+                old_score: 5000,
+                new_score: 5500,
+            }
+            .into(),
+        );
+    });
+    set_oracle(None); // Reset
+}
+
+#[test]
+fn update_reputation_oracle_clamps_at_bounds() {
+    set_oracle(Some(100)); // Configure account 100 as oracle
+    new_test_ext().execute_with(|| {
+        assert_ok!(AgentRegistryPallet::register_agent(
+            account(1),
+            b"did:claw:test".to_vec(),
+            b"{}".to_vec()
+        ));
+
+        // Try to exceed max
+        assert_ok!(AgentRegistryPallet::update_reputation(account(100), 0, 9999));
+        let agent = AgentRegistry::<Test>::get(0).unwrap();
+        assert_eq!(agent.reputation, 10000);
+
+        // Try to go below min
+        assert_ok!(AgentRegistryPallet::update_reputation(
+            account(100),
+            0,
+            -20000
+        ));
+        let agent = AgentRegistry::<Test>::get(0).unwrap();
+        assert_eq!(agent.reputation, 0);
+    });
+    set_oracle(None); // Reset
 }
 
 #[test]
