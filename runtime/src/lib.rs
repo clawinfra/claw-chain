@@ -587,6 +587,19 @@ impl pallet_agent_receipts::Config for Runtime {
     type MaxMetadataLen = ConstU32<512>;
 }
 
+/// Configure the Anonymous Messaging pallet (end-to-end encrypted messaging for agents).
+impl pallet_anon_messaging::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+    // Crypto constants
+    type MaxKeyBytes = ConstU32<32>;            // 32 bytes for X25519 public key
+    type MaxMessageIdLength = ConstU32<64>;     // Max 64 bytes for message ID
+    type MaxHashLength = ConstU32<32>;          // 32 bytes for Blake2b-256 hash
+    type MaxNonceLength = ConstU32<24>;         // 24 bytes for XChaCha20 nonce
+    type MaxInlinePayloadBytes = ConstU32<512>; // 512 bytes inline payload limit
+    type MaxMessagesPerAccount = ConstU32<1000>; // Max 1000 messages per account
+}
+
 frame_support::construct_runtime!(
     pub enum Runtime {
         System: frame_system,
@@ -616,6 +629,7 @@ frame_support::construct_runtime!(
         AgentDid: pallet_agent_did,
         QuadraticGovernance: pallet_quadratic_governance,
         AgentReceipts: pallet_agent_receipts,
+        AnonMessaging: pallet_anon_messaging,
     }
 );
 

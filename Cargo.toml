@@ -9,6 +9,7 @@ members = [
     "pallets/task-market",
     "pallets/quadratic-governance",
     "pallets/agent-receipts",
+    "pallets/anon-messaging",
 ]
 resolver = "2"
 
@@ -37,6 +38,7 @@ sp-offchain = { version = "40.0", default-features = false }
 sp-runtime = { version = "45.0", default-features = false }
 sp-session = { version = "42.0", default-features = false }
 sp-staking = { version = "42.1", default-features = false }
+sp-std = { version = "25.0", default-features = false }
 sp-storage = { version = "22.0", default-features = false }
 sp-transaction-pool = { version = "40.0", default-features = false }
 sp-version = { version = "43.0", default-features = false }
@@ -97,6 +99,7 @@ substrate-wasm-builder = { version = "31.1" }
 # ClawChain pallets
 pallet-agent-registry = { path = "pallets/agent-registry", default-features = false }
 pallet-agent-did = { path = "pallets/agent-did", default-features = false }
+pallet-anon-messaging = { path = "pallets/anon-messaging", default-features = false }
 pallet-claw-token = { path = "pallets/claw-token", default-features = false }
 pallet-reputation = { path = "pallets/reputation", default-features = false }
 pallet-task-market = { path = "pallets/task-market", default-features = false }

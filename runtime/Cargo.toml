@@ -71,6 +71,7 @@ pallet-agent-did = { workspace = true }
 pallet-rpc-registry = { workspace = true }
 pallet-quadratic-governance = { workspace = true }
 pallet-agent-receipts = { workspace = true }
+pallet-anon-messaging = { workspace = true }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true, optional = true }
@@ -128,6 +129,7 @@ std = [
     "pallet-agent-did/std",
     "pallet-quadratic-governance/std",
     "pallet-agent-receipts/std",
+    "pallet-anon-messaging/std",
     "substrate-wasm-builder",
 ]
 runtime-benchmarks = [
@@ -148,6 +150,7 @@ runtime-benchmarks = [
     "pallet-rpc-registry/runtime-benchmarks",
     "pallet-agent-did/runtime-benchmarks",
     "pallet-quadratic-governance/runtime-benchmarks",
+    "pallet-anon-messaging/runtime-benchmarks",
     "sp-runtime/runtime-benchmarks",
 ]
 try-runtime = [
@@ -177,4 +180,5 @@ try-runtime = [
     "pallet-agent-did/try-runtime",
     "pallet-quadratic-governance/try-runtime",
     "pallet-agent-receipts/try-runtime",
+    "pallet-anon-messaging/try-runtime",
 ]
