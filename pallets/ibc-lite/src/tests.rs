@@ -67,7 +67,7 @@ fn open_channel_requires_authorized_origin() {
                 b"chain-0".to_vec(),
                 b"remote-channel-0".to_vec(),
             ),
-            frame_system::Error::<Runtime>::BadOrigin
+            sp_runtime::DispatchError::BadOrigin
         );
     });
 }
@@ -139,7 +139,7 @@ fn cannot_send_on_closed_channel() {
         let (channel_id, chain, _) = open_channel_helper(0);
 
         // Close the channel
-        let bounded_id: ChannelId<Runtime> = channel_id.try_into().unwrap();
+        let bounded_id: ChannelId<Runtime> = channel_id.clone().try_into().unwrap();
         Channels::<Runtime>::mutate(&bounded_id, |maybe_ch| {
             if let Some(ch) = maybe_ch {
                 ch.state = ChannelState::Closed;
@@ -194,7 +194,7 @@ fn send_packet_fails_if_channel_not_open() {
         let (channel_id, chain, remote) = open_channel_helper(0);
 
         // Close the channel
-        let bounded_id: ChannelId<Runtime> = channel_id.try_into().unwrap();
+        let bounded_id: ChannelId<Runtime> = channel_id.clone().try_into().unwrap();
         Channels::<Runtime>::mutate(&bounded_id, |maybe_ch| {
             if let Some(ch) = maybe_ch {
                 ch.state = ChannelState::Closed;
@@ -444,7 +444,7 @@ fn add_relayer_requires_manager_origin() {
     new_test_ext().execute_with(|| {
         assert_err!(
             IbcLite::add_relayer(frame_system::RawOrigin::Signed(1).into(), 10,),
-            frame_system::Error::<Runtime>::BadOrigin
+            sp_runtime::DispatchError::BadOrigin
         );
     });
 }

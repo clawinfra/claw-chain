@@ -1,6 +1,5 @@
 //! IBC-lite traits and interfaces.
 
-use frame_support::pallet_prelude::*;
 
 // =========================================================
 // Agent Registry Interface

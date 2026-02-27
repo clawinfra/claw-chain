@@ -3,10 +3,11 @@
 #![cfg(test)]
 
 use super::*;
+use crate::traits::AgentRegistryInterface;
 use frame_support::derive_impl;
-use frame_support::traits::{ConstBool, ConstU32, ConstU64};
-use frame_system::config::PalletId;
+use frame_support::traits::ConstU32;
 use sp_core::H256;
+use sp_runtime::BuildStorage;
 
 // =========================================================
 // Mock Agent Registry
@@ -39,7 +40,7 @@ impl AgentRegistryInterface<u64> for MockAgentRegistry {
 frame_support::construct_runtime!(
     pub enum Runtime {
         System: frame_system,
-        IbcLite: pallet_ibc_lite,
+        IbcLite: crate,
     }
 );
 

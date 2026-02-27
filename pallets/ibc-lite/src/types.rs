@@ -1,8 +1,9 @@
 //! IBC-lite types and data structures.
 
 use super::Config;
-use codec::{Decode, Encode, MaxEncodedLen};
+use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use frame_support::pallet_prelude::*;
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_core::H256;
 use sp_std::prelude::*;
 
@@ -21,9 +22,22 @@ pub type RemoteAgentId<T> = BoundedVec<u8, <T as Config>::MaxChannelIdLen>;
 // =========================================================
 
 /// Channel state machine.
-#[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+    Clone,
+    Copy,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Default,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+)]
 pub enum ChannelState {
     /// Channel open has been initiated, awaiting confirmation.
+    #[default]
     Init,
     /// Channel is fully open and operational.
     Open,
@@ -33,18 +47,22 @@ pub enum ChannelState {
     Closed,
 }
 
-impl Default for ChannelState {
-    fn default() -> Self {
-        Self::Init
-    }
-}
-
 // =========================================================
 // Channel Info
 // =========================================================
 
 /// Channel information stored on-chain.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+    CloneNoBound,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    EqNoBound,
+    PartialEqNoBound,
+    RuntimeDebugNoBound,
+    TypeInfo,
+    MaxEncodedLen,
+)]
 #[scale_info(skip_type_params(T))]
 pub struct ChannelInfo<T: Config> {
     /// Channel identifier on this chain.
@@ -68,7 +86,17 @@ pub struct ChannelInfo<T: Config> {
 // =========================================================
 
 /// A cross-chain IBC-lite packet.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+    CloneNoBound,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    EqNoBound,
+    PartialEqNoBound,
+    RuntimeDebugNoBound,
+    TypeInfo,
+    MaxEncodedLen,
+)]
 #[scale_info(skip_type_params(T))]
 pub struct Packet<T: Config> {
     /// Monotonically increasing sequence number for this channel.
@@ -96,7 +124,17 @@ pub struct Packet<T: Config> {
 // =========================================================
 
 /// Typed payload variants for agent messages.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+    CloneNoBound,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    EqNoBound,
+    PartialEqNoBound,
+    RuntimeDebugNoBound,
+    TypeInfo,
+    MaxEncodedLen,
+)]
 #[scale_info(skip_type_params(T))]
 pub enum PacketPayload<T: Config> {
     /// Raw bytes (forward-compatible for future types).

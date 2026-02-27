@@ -55,10 +55,15 @@ use sp_std::prelude::*;
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
+    use crate::weights::WeightInfo;
+    use sp_runtime::traits::Saturating;
     use traits::AgentRegistryInterface;
 
     // Import types from the types module
-    pub use crate::types::{AgentId, ChainId, ChannelId, ChannelState, RemoteAgentId, Sequence};
+    pub use crate::types::{
+        AckStatus, AgentId, ChainId, ChannelId, ChannelInfo, ChannelState, Packet, PacketPayload,
+        ReceiptStatus, RemoteAgentId, Sequence,
+    };
 
     // =========================================================
     // Config
@@ -342,7 +347,7 @@ pub mod pallet {
 
             Channels::<T>::insert(&channel_id, channel_info);
             ChannelsByChain::<T>::mutate(&chain_id, |channels| {
-                if let Err(_) = channels.try_push(channel_id.clone()) {
+                if channels.try_push(channel_id.clone()).is_err() {
                     return Err(());
                 }
                 Ok(())
@@ -356,8 +361,8 @@ pub mod pallet {
 
             Self::deposit_event(Event::ChannelOpened {
                 channel_id: channel_id.to_vec(),
-                counterparty_chain: counterparty_chain,
-                counterparty_channel: counterparty_channel,
+                counterparty_chain: counterparty_chain_id,
+                counterparty_channel: counterparty_channel_id,
             });
 
             Ok(())
@@ -427,7 +432,7 @@ pub mod pallet {
             dst_agent_id: Option<Vec<u8>>,
             payload: PacketPayload<T>,
         ) -> DispatchResult {
-            let who = ensure_signed(origin)?;
+            let _who = ensure_signed(origin)?;
 
             let bounded_channel_id: ChannelId<T> = channel_id
                 .clone()
@@ -523,17 +528,17 @@ pub mod pallet {
             // Verify this chain is the destination
             // (In a real implementation, we'd check dst_chain_id against our chain ID)
 
+            // Verify no replay (check before sequence to give more specific error)
+            ensure!(
+                !PacketReceipts::<T>::contains_key(&packet.dst_channel_id, packet.sequence),
+                Error::<T>::PacketAlreadyReceived
+            );
+
             // Verify sequence
             let expected_seq = RecvSequences::<T>::get(&packet.dst_channel_id);
             ensure!(
                 packet.sequence == expected_seq,
                 Error::<T>::SequenceMismatch
-            );
-
-            // Verify no replay
-            ensure!(
-                !PacketReceipts::<T>::contains_key(&packet.dst_channel_id, packet.sequence),
-                Error::<T>::PacketAlreadyReceived
             );
 
             // Verify not timed out
@@ -770,7 +775,7 @@ pub mod pallet {
             data.extend_from_slice(&packet.sequence.to_be_bytes());
             data.extend_from_slice(packet.src_channel_id.as_slice());
             data.extend_from_slice(packet.dst_channel_id.as_slice());
-            data.extend_from_slice(&packet.timeout_height.to_be_bytes());
+            data.extend_from_slice(&packet.timeout_height.encode());
             data.extend_from_slice(&payload_hash);
 
             H256::from(blake2_256(&data))
