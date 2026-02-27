@@ -35,6 +35,7 @@ impl pallet_agent_receipts::Config for Test {
     type MaxAgentIdLen = ConstU32<64>;
     type MaxActionTypeLen = ConstU32<64>;
     type MaxMetadataLen = ConstU32<512>;
+    type MaxClearBatchSize = ConstU32<1000>;
 }
 
 // Build test externalities from genesis storage.
@@ -362,5 +363,31 @@ fn different_agents_have_independent_nonces() {
 
         // Global counter = 4
         assert_eq!(ReceiptCount::<Test>::get(), 4);
+    });
+}
+
+#[test]
+fn clear_old_receipts_fails_batch_size_exceeded() {
+    new_test_ext().execute_with(|| {
+        let agent_id = b"dos-agent".to_vec();
+
+        // Try to clear with before_nonce > MaxClearBatchSize (1000)
+        assert_noop!(
+            AgentReceiptsPallet::clear_old_receipts(account(1), agent_id.clone(), 1001),
+            crate::Error::<Test>::BatchSizeExceeded
+        );
+
+        // u64::MAX should also fail
+        assert_noop!(
+            AgentReceiptsPallet::clear_old_receipts(account(1), agent_id.clone(), u64::MAX),
+            crate::Error::<Test>::BatchSizeExceeded
+        );
+
+        // Exactly at limit should succeed
+        assert_ok!(AgentReceiptsPallet::clear_old_receipts(
+            account(1),
+            agent_id,
+            1000,
+        ));
     });
 }
