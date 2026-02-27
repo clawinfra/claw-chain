@@ -585,6 +585,7 @@ impl pallet_agent_receipts::Config for Runtime {
     type MaxAgentIdLen = ConstU32<64>;
     type MaxActionTypeLen = ConstU32<64>;
     type MaxMetadataLen = ConstU32<512>;
+    type MaxClearBatchSize = ConstU32<1000>;
 }
 
 // =========================================================

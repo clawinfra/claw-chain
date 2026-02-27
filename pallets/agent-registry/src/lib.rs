@@ -286,9 +286,10 @@ pub mod pallet {
 
         /// Update an agent's reputation score.
         ///
-        /// Can be called by anyone (in production, this would be restricted to
-        /// a reputation oracle or governance). The delta is applied to the current
-        /// score, clamped to 0-10000.
+        /// Restricted to root/sudo origin only. In production, reputation updates
+        /// should come through governance proposals.
+        ///
+        /// // TODO: Replace with ReputationOracle origin in v2
         #[pallet::call_index(2)]
         #[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().reads_writes(1, 1))]
         pub fn update_reputation(
@@ -296,7 +297,7 @@ pub mod pallet {
             agent_id: AgentId,
             delta: i32,
         ) -> DispatchResult {
-            ensure_signed(origin)?;
+            ensure_root(origin)?;
 
             AgentRegistry::<T>::try_mutate(agent_id, |maybe_agent| -> DispatchResult {
                 let agent = maybe_agent.as_mut().ok_or(Error::<T>::AgentNotFound)?;
