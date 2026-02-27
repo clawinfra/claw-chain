@@ -306,21 +306,15 @@ pub mod pallet {
             agent_id: AgentId,
             delta: i32,
         ) -> DispatchResult {
-            // Check if oracle is configured
-            if let Some(oracle) = T::ReputationOracle::get() {
-                // Oracle configured: only oracle can update
-                // Handle root origin separately to give proper error
-                if let Ok(caller) = ensure_signed(origin.clone()) {
+            // If oracle is set, require signed origin from oracle
+            // If oracle is None, require root origin
+            match T::ReputationOracle::get() {
+                Some(oracle) => {
+                    // In oracle mode, reject root and require signed origin from oracle
+                    let caller = ensure_signed(origin).map_err(|_| Error::<T>::NotAuthorized)?;
                     ensure!(caller == oracle, Error::<T>::NotAuthorized);
-                } else {
-                    // Not a signed origin (could be root or none)
-                    // If it's root when oracle is configured, that's unauthorized
-                    ensure_root(origin)?; // Will fail if not root, but we want to ensure it fails
-                    return Err(Error::<T>::NotAuthorized.into()); // Root configured but oracle exists
                 }
-            } else {
-                // No oracle: fall back to root-only (for initial deployment)
-                ensure_root(origin)?;
+                None => ensure_root(origin)?,
             }
 
             AgentRegistry::<T>::try_mutate(agent_id, |maybe_agent| -> DispatchResult {
