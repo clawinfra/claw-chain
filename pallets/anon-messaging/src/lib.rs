@@ -39,10 +39,10 @@ mod tests;
 pub mod weights;
 pub use weights::WeightInfo;
 
+#[allow(clippy::too_many_arguments)]
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
-    use alloc::vec::Vec;
     use frame_support::{
         pallet_prelude::*,
         traits::{Currency, ExistenceRequirement, ReservableCurrency},
@@ -577,7 +577,7 @@ pub mod pallet {
 
                 // Try to enqueue; if full, roll over to next block
                 let mut enqueued = false;
-                EphemeralQueue::<T>::mutate(&expire_block, |q| {
+                EphemeralQueue::<T>::mutate(expire_block, |q| {
                     if (q.len() as u32) < T::MaxEphemeralPerBlock::get() {
                         let _ = q.try_push((receiver.clone(), msg_id));
                         enqueued = true;
@@ -587,7 +587,7 @@ pub mod pallet {
                 if !enqueued {
                     // Rollover to next block
                     let next_block = expire_block.saturating_add(1u32.into());
-                    EphemeralQueue::<T>::mutate(&next_block, |q| {
+                    EphemeralQueue::<T>::mutate(next_block, |q| {
                         let _ = q.try_push((receiver.clone(), msg_id));
                     });
                 }
