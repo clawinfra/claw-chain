@@ -11,6 +11,7 @@ members = [
     "pallets/quadratic-governance",
     "pallets/agent-receipts",
     "pallets/ibc-lite",
+    "pallets/anon-messaging",
 ]
 resolver = "2"
 
@@ -109,6 +110,7 @@ pallet-quadratic-governance = { path = "pallets/quadratic-governance", default-f
 pallet-agent-receipts = { path = "pallets/agent-receipts", default-features = false }
 pallet-service-market = { path = "pallets/service-market", default-features = false }
 pallet-ibc-lite = { path = "pallets/ibc-lite", default-features = false }
+pallet-anon-messaging = { path = "pallets/anon-messaging", default-features = false }
 
 # Serde
 serde = { version = "1.0", features = ["derive"] }
