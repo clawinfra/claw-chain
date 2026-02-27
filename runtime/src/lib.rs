@@ -592,7 +592,7 @@ impl pallet_agent_receipts::Config for Runtime {
 // =========================================================
 
 /// Agent registry wrapper for IBC-lite.
-struct IbcAgentRegistry;
+pub struct IbcAgentRegistry;
 
 impl pallet_ibc_lite::traits::AgentRegistryInterface<AccountId> for IbcAgentRegistry {
     fn agent_exists(agent_id: u64) -> bool {
