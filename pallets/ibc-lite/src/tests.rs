@@ -22,17 +22,18 @@ fn open_channel_helper(channel_num: u64) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
     ));
 
     // Manually transition to Open for testing
-    let channel_id: ChannelId<Runtime> = expected_channel_id
-        .clone()
-        .try_into()
-        .unwrap();
+    let channel_id: ChannelId<Runtime> = expected_channel_id.clone().try_into().unwrap();
     Channels::<Runtime>::mutate(&channel_id, |maybe_channel| {
         if let Some(ch) = maybe_channel {
             ch.state = ChannelState::Open;
         }
     });
 
-    (expected_channel_id, counterparty_chain, counterparty_channel)
+    (
+        expected_channel_id,
+        counterparty_chain,
+        counterparty_channel,
+    )
 }
 
 // =========================================================
@@ -99,10 +100,7 @@ fn close_channel_confirm_requires_trusted_relayer() {
         ));
 
         assert_err!(
-            IbcLite::close_channel_confirm(
-                frame_system::RawOrigin::Signed(1).into(),
-                channel_id,
-            ),
+            IbcLite::close_channel_confirm(frame_system::RawOrigin::Signed(1).into(), channel_id,),
             Error::<Runtime>::NotTrustedRelayer
         );
     });
@@ -290,10 +288,7 @@ fn receive_packet_rejects_replay() {
 
         // Second receive should fail
         assert_err!(
-            IbcLite::receive_packet(
-                frame_system::RawOrigin::Signed(10).into(),
-                packet,
-            ),
+            IbcLite::receive_packet(frame_system::RawOrigin::Signed(10).into(), packet,),
             Error::<Runtime>::PacketAlreadyReceived
         );
     });
@@ -320,10 +315,7 @@ fn receive_packet_rejects_non_relayer() {
         };
 
         assert_err!(
-            IbcLite::receive_packet(
-                frame_system::RawOrigin::Signed(1).into(),
-                packet,
-            ),
+            IbcLite::receive_packet(frame_system::RawOrigin::Signed(1).into(), packet,),
             Error::<Runtime>::NotTrustedRelayer
         );
     });
@@ -368,7 +360,10 @@ fn acknowledge_packet_works() {
         assert!(!PacketCommitments::<Runtime>::contains_key(&bounded_id, 1));
 
         // Ack should be stored
-        assert!(PacketAcknowledgements::<Runtime>::contains_key(&bounded_id, 1));
+        assert!(PacketAcknowledgements::<Runtime>::contains_key(
+            &bounded_id,
+            1
+        ));
     });
 }
 

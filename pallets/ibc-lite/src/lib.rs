@@ -34,14 +34,14 @@ extern crate alloc;
 
 pub use pallet::*;
 
-pub mod types;
 pub mod traits;
+pub mod types;
 pub mod weights;
 
 #[cfg(test)]
-mod tests;
-#[cfg(test)]
 mod mock;
+#[cfg(test)]
+mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
@@ -58,7 +58,7 @@ pub mod pallet {
     use traits::AgentRegistryInterface;
 
     // Import types from the types module
-    pub use crate::types::{Sequence, AgentId, ChannelId, ChainId, RemoteAgentId, ChannelState};
+    pub use crate::types::{AgentId, ChainId, ChannelId, ChannelState, RemoteAgentId, Sequence};
 
     // =========================================================
     // Config
@@ -123,13 +123,8 @@ pub mod pallet {
     /// All channels, keyed by channel ID.
     #[pallet::storage]
     #[pallet::getter(fn channels)]
-    pub type Channels<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        ChannelId<T>,
-        ChannelInfo<T>,
-        OptionQuery,
-    >;
+    pub type Channels<T: Config> =
+        StorageMap<_, Blake2_128Concat, ChannelId<T>, ChannelInfo<T>, OptionQuery>;
 
     /// Channel IDs grouped by counterparty chain (for discovery).
     #[pallet::storage]
@@ -143,33 +138,18 @@ pub mod pallet {
 
     /// Next sequence number to use when sending on a channel.
     #[pallet::storage]
-    pub type SendSequences<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        ChannelId<T>,
-        Sequence,
-        ValueQuery,
-    >;
+    pub type SendSequences<T: Config> =
+        StorageMap<_, Blake2_128Concat, ChannelId<T>, Sequence, ValueQuery>;
 
     /// Next expected receive sequence for a channel.
     #[pallet::storage]
-    pub type RecvSequences<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        ChannelId<T>,
-        Sequence,
-        ValueQuery,
-    >;
+    pub type RecvSequences<T: Config> =
+        StorageMap<_, Blake2_128Concat, ChannelId<T>, Sequence, ValueQuery>;
 
     /// Next expected ack sequence for a channel.
     #[pallet::storage]
-    pub type AckSequences<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        ChannelId<T>,
-        Sequence,
-        ValueQuery,
-    >;
+    pub type AckSequences<T: Config> =
+        StorageMap<_, Blake2_128Concat, ChannelId<T>, Sequence, ValueQuery>;
 
     /// Packet commitments — hash stored until packet is acknowledged.
     #[pallet::storage]
@@ -210,11 +190,8 @@ pub mod pallet {
     /// Set of trusted relayers that may submit packets and acks.
     #[pallet::storage]
     #[pallet::getter(fn trusted_relayers)]
-    pub type TrustedRelayers<T: Config> = StorageValue<
-        _,
-        BoundedVec<T::AccountId, T::MaxRelayers>,
-        ValueQuery,
-    >;
+    pub type TrustedRelayers<T: Config> =
+        StorageValue<_, BoundedVec<T::AccountId, T::MaxRelayers>, ValueQuery>;
 
     /// Maps (remote_chain_id, remote_agent_id) → local AgentId.
     #[pallet::storage]
@@ -369,7 +346,8 @@ pub mod pallet {
                     return Err(());
                 }
                 Ok(())
-            }).map_err(|_| Error::<T>::TooManyChannels)?;
+            })
+            .map_err(|_| Error::<T>::TooManyChannels)?;
 
             // Initialize sequences
             SendSequences::<T>::insert(&channel_id, 1u64);
@@ -388,10 +366,7 @@ pub mod pallet {
         /// Initiate channel closure.
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::close_channel_init())]
-        pub fn close_channel_init(
-            origin: OriginFor<T>,
-            channel_id: Vec<u8>,
-        ) -> DispatchResult {
+        pub fn close_channel_init(origin: OriginFor<T>, channel_id: Vec<u8>) -> DispatchResult {
             T::RelayerManagerOrigin::ensure_origin(origin)?;
 
             let bounded_channel_id: ChannelId<T> = channel_id
@@ -401,7 +376,10 @@ pub mod pallet {
 
             Channels::<T>::try_mutate(&bounded_channel_id, |maybe_channel| -> DispatchResult {
                 let channel = maybe_channel.as_mut().ok_or(Error::<T>::ChannelNotFound)?;
-                ensure!(channel.state == ChannelState::Open, Error::<T>::ChannelNotOpen);
+                ensure!(
+                    channel.state == ChannelState::Open,
+                    Error::<T>::ChannelNotOpen
+                );
                 channel.state = ChannelState::CloseInit;
                 Ok(())
             })?;
@@ -413,10 +391,7 @@ pub mod pallet {
         /// Confirm channel closure (trusted relayer only).
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::close_channel_confirm())]
-        pub fn close_channel_confirm(
-            origin: OriginFor<T>,
-            channel_id: Vec<u8>,
-        ) -> DispatchResult {
+        pub fn close_channel_confirm(origin: OriginFor<T>, channel_id: Vec<u8>) -> DispatchResult {
             let who = ensure_signed(origin)?;
             Self::ensure_trusted_relayer(&who)?;
 
@@ -454,7 +429,8 @@ pub mod pallet {
         ) -> DispatchResult {
             let who = ensure_signed(origin)?;
 
-            let bounded_channel_id: ChannelId<T> = channel_id.clone()
+            let bounded_channel_id: ChannelId<T> = channel_id
+                .clone()
                 .try_into()
                 .map_err(|_| Error::<T>::ChannelIdTooLong)?;
             let bounded_dst_chain_id: ChainId<T> = dst_chain_id
@@ -469,9 +445,12 @@ pub mod pallet {
             };
 
             // Verify channel is open
-            let channel = Channels::<T>::get(&bounded_channel_id)
-                .ok_or(Error::<T>::ChannelNotFound)?;
-            ensure!(channel.state == ChannelState::Open, Error::<T>::ChannelNotOpen);
+            let channel =
+                Channels::<T>::get(&bounded_channel_id).ok_or(Error::<T>::ChannelNotFound)?;
+            ensure!(
+                channel.state == ChannelState::Open,
+                Error::<T>::ChannelNotOpen
+            );
 
             // Verify chain matches
             ensure!(
@@ -529,24 +508,27 @@ pub mod pallet {
         /// Receive a packet from a trusted relayer.
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::receive_packet())]
-        pub fn receive_packet(
-            origin: OriginFor<T>,
-            packet: Packet<T>,
-        ) -> DispatchResult {
+        pub fn receive_packet(origin: OriginFor<T>, packet: Packet<T>) -> DispatchResult {
             let who = ensure_signed(origin)?;
             Self::ensure_trusted_relayer(&who)?;
 
             // Verify channel exists and is open
-            let channel = Channels::<T>::get(&packet.dst_channel_id)
-                .ok_or(Error::<T>::ChannelNotFound)?;
-            ensure!(channel.state == ChannelState::Open, Error::<T>::ChannelNotOpen);
+            let channel =
+                Channels::<T>::get(&packet.dst_channel_id).ok_or(Error::<T>::ChannelNotFound)?;
+            ensure!(
+                channel.state == ChannelState::Open,
+                Error::<T>::ChannelNotOpen
+            );
 
             // Verify this chain is the destination
             // (In a real implementation, we'd check dst_chain_id against our chain ID)
 
             // Verify sequence
             let expected_seq = RecvSequences::<T>::get(&packet.dst_channel_id);
-            ensure!(packet.sequence == expected_seq, Error::<T>::SequenceMismatch);
+            ensure!(
+                packet.sequence == expected_seq,
+                Error::<T>::SequenceMismatch
+            );
 
             // Verify no replay
             ensure!(
@@ -590,7 +572,8 @@ pub mod pallet {
             let who = ensure_signed(origin)?;
             Self::ensure_trusted_relayer(&who)?;
 
-            let bounded_channel_id: ChannelId<T> = channel_id.clone()
+            let bounded_channel_id: ChannelId<T> = channel_id
+                .clone()
                 .try_into()
                 .map_err(|_| Error::<T>::ChannelIdTooLong)?;
 
@@ -602,7 +585,11 @@ pub mod pallet {
 
             // Extract success from ack payload
             let (success, _error_code) = match &ack {
-                PacketPayload::Ack { success, error_code, .. } => (*success, *error_code),
+                PacketPayload::Ack {
+                    success,
+                    error_code,
+                    ..
+                } => (*success, *error_code),
                 _ => (false, Some(1)), // Invalid ack format
             };
 
@@ -636,7 +623,8 @@ pub mod pallet {
         ) -> DispatchResult {
             let _who = ensure_signed(origin)?; // Anyone can call
 
-            let bounded_channel_id: ChannelId<T> = channel_id.clone()
+            let bounded_channel_id: ChannelId<T> = channel_id
+                .clone()
                 .try_into()
                 .map_err(|_| Error::<T>::ChannelIdTooLong)?;
 
@@ -670,10 +658,7 @@ pub mod pallet {
         /// Add a trusted relayer.
         #[pallet::call_index(7)]
         #[pallet::weight(T::WeightInfo::add_relayer())]
-        pub fn add_relayer(
-            origin: OriginFor<T>,
-            relayer: T::AccountId,
-        ) -> DispatchResult {
+        pub fn add_relayer(origin: OriginFor<T>, relayer: T::AccountId) -> DispatchResult {
             T::RelayerManagerOrigin::ensure_origin(origin)?;
 
             let mut relayers = TrustedRelayers::<T>::get();
@@ -686,7 +671,8 @@ pub mod pallet {
                 Error::<T>::TooManyRelayers
             );
 
-            relayers.try_push(relayer.clone())
+            relayers
+                .try_push(relayer.clone())
                 .map_err(|_| Error::<T>::TooManyRelayers)?;
             TrustedRelayers::<T>::put(relayers);
 
@@ -697,14 +683,12 @@ pub mod pallet {
         /// Remove a trusted relayer.
         #[pallet::call_index(8)]
         #[pallet::weight(T::WeightInfo::remove_relayer())]
-        pub fn remove_relayer(
-            origin: OriginFor<T>,
-            relayer: T::AccountId,
-        ) -> DispatchResult {
+        pub fn remove_relayer(origin: OriginFor<T>, relayer: T::AccountId) -> DispatchResult {
             T::RelayerManagerOrigin::ensure_origin(origin)?;
 
             let mut relayers = TrustedRelayers::<T>::get();
-            let idx = relayers.iter()
+            let idx = relayers
+                .iter()
                 .position(|r| r == &relayer)
                 .ok_or(Error::<T>::RelayerNotFound)?;
             relayers.remove(idx);
@@ -726,10 +710,12 @@ pub mod pallet {
             let who = ensure_signed(origin)?;
             Self::ensure_trusted_relayer(&who)?;
 
-            let bounded_chain_id: ChainId<T> = chain_id.clone()
+            let bounded_chain_id: ChainId<T> = chain_id
+                .clone()
                 .try_into()
                 .map_err(|_| Error::<T>::ChainIdTooLong)?;
-            let bounded_remote_agent_id: RemoteAgentId<T> = remote_agent_id.clone()
+            let bounded_remote_agent_id: RemoteAgentId<T> = remote_agent_id
+                .clone()
                 .try_into()
                 .map_err(|_| Error::<T>::ChannelIdTooLong)?;
 

@@ -20,7 +20,11 @@ mod benchmarks {
         let counterparty_channel_id = b"benchmark-channel-0".to_vec();
 
         #[extrinsic_call]
-        _(RawOrigin::Root, counterparty_chain_id, counterparty_channel_id);
+        _(
+            RawOrigin::Root,
+            counterparty_chain_id,
+            counterparty_channel_id,
+        );
     }
 
     /// Benchmark for initiating channel closure.

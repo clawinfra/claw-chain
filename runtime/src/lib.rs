@@ -600,8 +600,7 @@ impl pallet_ibc_lite::traits::AgentRegistryInterface<AccountId> for IbcAgentRegi
     }
 
     fn agent_owner(agent_id: u64) -> Option<AccountId> {
-        pallet_agent_registry::AgentRegistry::<Runtime>::get(agent_id)
-            .map(|info| info.owner)
+        pallet_agent_registry::AgentRegistry::<Runtime>::get(agent_id).map(|info| info.owner)
     }
 
     fn is_agent_active(agent_id: u64) -> bool {
