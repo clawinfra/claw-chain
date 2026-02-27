@@ -10,6 +10,7 @@ members = [
     "pallets/service-market",
     "pallets/quadratic-governance",
     "pallets/agent-receipts",
+    "pallets/ibc-lite",
 ]
 resolver = "2"
 
@@ -37,6 +38,7 @@ sp-keyring = { version = "45.0" }
 sp-offchain = { version = "40.0", default-features = false }
 sp-runtime = { version = "45.0", default-features = false }
 sp-session = { version = "42.0", default-features = false }
+sp-std = { version = "21.0", default-features = false }
 sp-staking = { version = "42.1", default-features = false }
 sp-storage = { version = "22.0", default-features = false }
 sp-transaction-pool = { version = "40.0", default-features = false }
@@ -106,6 +108,7 @@ pallet-rpc-registry = { path = "pallets/rpc-registry", default-features = false 
 pallet-quadratic-governance = { path = "pallets/quadratic-governance", default-features = false }
 pallet-agent-receipts = { path = "pallets/agent-receipts", default-features = false }
 pallet-service-market = { path = "pallets/service-market", default-features = false }
+pallet-ibc-lite = { path = "pallets/ibc-lite", default-features = false }
 
 # Serde
 serde = { version = "1.0", features = ["derive"] }

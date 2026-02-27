@@ -587,6 +587,45 @@ impl pallet_agent_receipts::Config for Runtime {
     type MaxMetadataLen = ConstU32<512>;
 }
 
+// =========================================================
+// IBC-lite Configuration
+// =========================================================
+
+/// Agent registry wrapper for IBC-lite.
+struct IbcAgentRegistry;
+
+impl pallet_ibc_lite::traits::AgentRegistryInterface<AccountId> for IbcAgentRegistry {
+    fn agent_exists(agent_id: u64) -> bool {
+        pallet_agent_registry::AgentRegistry::<Runtime>::contains_key(agent_id)
+    }
+
+    fn agent_owner(agent_id: u64) -> Option<AccountId> {
+        pallet_agent_registry::AgentRegistry::<Runtime>::get(agent_id)
+            .map(|info| info.owner)
+    }
+
+    fn is_agent_active(agent_id: u64) -> bool {
+        pallet_agent_registry::AgentRegistry::<Runtime>::get(agent_id)
+            .map(|info| info.status == pallet_agent_registry::AgentStatus::Active)
+            .unwrap_or(false)
+    }
+}
+
+/// Configure the IBC-lite pallet.
+impl pallet_ibc_lite::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+    type RelayerManagerOrigin = frame_system::EnsureRoot<AccountId>;
+    type MaxRelayers = ConstU32<10>;
+    type MaxChannelsPerChain = ConstU32<100>;
+    type MaxChannelIdLen = ConstU32<128>;
+    type MaxChainIdLen = ConstU32<128>;
+    type MaxPayloadLen = ConstU32<4096>;
+    type MaxPendingPackets = ConstU32<1000>;
+    type PacketTimeoutBlocks = ConstU32<100>;
+    type AgentRegistry = IbcAgentRegistry;
+}
+
 frame_support::construct_runtime!(
     pub enum Runtime {
         System: frame_system,
@@ -616,6 +655,7 @@ frame_support::construct_runtime!(
         AgentDid: pallet_agent_did,
         QuadraticGovernance: pallet_quadratic_governance,
         AgentReceipts: pallet_agent_receipts,
+        IbcLite: pallet_ibc_lite,
     }
 );
 
