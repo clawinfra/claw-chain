@@ -117,7 +117,6 @@ parameter_types! {
 }
 
 impl pallet_service_market::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type WeightInfo = SubstrateWeight<Test>;
     type Currency = Balances;
     type ReputationManager = Reputation;

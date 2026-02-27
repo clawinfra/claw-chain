@@ -40,6 +40,7 @@ mod tests;
 use alloc::vec::Vec;
 
 #[frame_support::pallet]
+#[allow(clippy::too_many_arguments)]
 pub mod pallet {
     use super::*;
     use frame_support::{
@@ -298,8 +299,6 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
         type WeightInfo: WeightInfo;
 
         type Currency: Currency<Self::AccountId>;
@@ -621,6 +620,7 @@ pub mod pallet {
     // Extrinsics
     // =========================================================
 
+    #[allow(clippy::too_many_arguments)]
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         /// (Index 10) Create a persistent service listing.
