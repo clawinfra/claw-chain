@@ -76,6 +76,10 @@ pub mod pallet {
         #[pallet::constant]
         type MaxMetadataLen: Get<u32>;
 
+        /// Maximum number of receipts to clear in a single call (DoS protection).
+        #[pallet::constant]
+        type MaxClearBatchSize: Get<u64>;
+
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -231,8 +235,11 @@ pub mod pallet {
                 .try_into()
                 .map_err(|_| Error::<T>::AgentIdTooLong)?;
 
+            let max_batch = T::MaxClearBatchSize::get();
+            let effective_range = before_nonce.min(max_batch);
+
             let mut cleared: u64 = 0;
-            for nonce in 0..before_nonce {
+            for nonce in 0..effective_range {
                 if Receipts::<T>::contains_key(&bounded_agent_id, nonce) {
                     Receipts::<T>::remove(&bounded_agent_id, nonce);
                     cleared = cleared.saturating_add(1);

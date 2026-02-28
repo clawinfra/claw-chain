@@ -35,6 +35,7 @@ impl pallet_agent_receipts::Config for Test {
     type MaxAgentIdLen = ConstU32<64>;
     type MaxActionTypeLen = ConstU32<64>;
     type MaxMetadataLen = ConstU32<512>;
+    type MaxClearBatchSize = ConstU64<1000>;
 }
 
 // Build test externalities from genesis storage.
