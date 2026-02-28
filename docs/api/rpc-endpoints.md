@@ -128,7 +128,7 @@ ClawChain's custom pallets store data on-chain that can be queried via `state_ge
 ### Via TypeScript SDK
 
 ```ts
-import { ClawChainClient, AgentRegistry, TaskMarket } from "@clawinfra/clawchain-sdk";
+import { ClawChainClient, AgentRegistry, TaskMarket } from "clawchain-sdk";
 
 const client = new ClawChainClient("wss://testnet.clawchain.win");
 await client.connect();

@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 - `pallet-agent-receipts`: Verifiable AI agent activity attestation (ProvenanceChain)
-- TypeScript SDK v0.1.0: `@clawinfra/clawchain-sdk` with ClawChainClient, AgentRegistry, TaskMarket
+- TypeScript SDK v0.1.0: `clawchain-sdk` with ClawChainClient, AgentRegistry, TaskMarket
 - Comprehensive pallet test suite: 186+ tests passing across all pallets
 - `pallet-gas-quota`: Hybrid gas model with stake-based free transaction quotas
 - `pallet-rpc-registry`: Agent RPC capability advertisement
