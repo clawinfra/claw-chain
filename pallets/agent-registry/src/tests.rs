@@ -521,11 +521,7 @@ fn update_reputation_clamps_at_min() {
         ));
 
         // Try to go below 0
-        assert_ok!(AgentRegistryPallet::update_reputation(
-            root(),
-            0,
-            -20000
-        ));
+        assert_ok!(AgentRegistryPallet::update_reputation(root(), 0, -20000));
         let agent = AgentRegistry::<Test>::get(0).unwrap();
         assert_eq!(agent.reputation, 0); // Clamped at zero
     });
@@ -586,12 +582,20 @@ fn update_reputation_oracle_can_update() {
         ));
 
         // Oracle (account 100) should be able to update reputation
-        assert_ok!(AgentRegistryPallet::update_reputation(account(100), 0, 1000));
+        assert_ok!(AgentRegistryPallet::update_reputation(
+            account(100),
+            0,
+            1000
+        ));
         let agent = AgentRegistry::<Test>::get(0).unwrap();
         assert_eq!(agent.reputation, 6000);
 
         // Oracle can also decrease reputation
-        assert_ok!(AgentRegistryPallet::update_reputation(account(100), 0, -500));
+        assert_ok!(AgentRegistryPallet::update_reputation(
+            account(100),
+            0,
+            -500
+        ));
         let agent = AgentRegistry::<Test>::get(0).unwrap();
         assert_eq!(agent.reputation, 5500);
     });
@@ -663,7 +667,11 @@ fn update_reputation_oracle_clamps_at_bounds() {
         ));
 
         // Try to exceed max
-        assert_ok!(AgentRegistryPallet::update_reputation(account(100), 0, 9999));
+        assert_ok!(AgentRegistryPallet::update_reputation(
+            account(100),
+            0,
+            9999
+        ));
         let agent = AgentRegistry::<Test>::get(0).unwrap();
         assert_eq!(agent.reputation, 10000);
 

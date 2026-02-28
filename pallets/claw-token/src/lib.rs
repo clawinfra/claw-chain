@@ -257,10 +257,7 @@ pub mod pallet {
         /// * `amount` - The amount to add to the treasury balance
         #[pallet::call_index(3)]
         #[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().reads_writes(1, 1))]
-        pub fn fund_treasury(
-            origin: OriginFor<T>,
-            amount: u128,
-        ) -> DispatchResult {
+        pub fn fund_treasury(origin: OriginFor<T>, amount: u128) -> DispatchResult {
             ensure_root(origin)?;
 
             let current_balance = TreasuryBalance::<T>::get();
