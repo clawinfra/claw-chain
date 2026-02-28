@@ -44,6 +44,9 @@ pub mod pallet {
         /// The currency implementation (typically pallet_balances).
         type Currency: Currency<Self::AccountId>;
 
+        /// The treasury account that holds funds for treasury_spend.
+        type TreasuryAccount: Get<Self::AccountId>;
+
         /// Total airdrop pool size in base units.
         #[pallet::constant]
         type AirdropPool: Get<u128>;
@@ -227,6 +230,19 @@ pub mod pallet {
             amount: u128,
         ) -> DispatchResult {
             ensure_root(origin)?;
+
+            let treasury = T::TreasuryAccount::get();
+            let balance_amount = amount
+                .try_into()
+                .map_err(|_| Error::<T>::ArithmeticOverflow)?;
+
+            T::Currency::transfer(
+                &treasury,
+                &to,
+                balance_amount,
+                frame_support::traits::ExistenceRequirement::KeepAlive,
+            )
+            .map_err(|_| Error::<T>::InsufficientTreasuryBalance)?;
 
             Self::deposit_event(Event::TreasurySpend { to, amount });
 

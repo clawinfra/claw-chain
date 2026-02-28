@@ -53,12 +53,21 @@ impl pallet_balances::Config for Test {
 // Airdrop pool: 400,000 tokens (simplified for testing)
 parameter_types! {
     pub const TestAirdropPool: u128 = 400_000;
+    pub const TreasuryAccountId: u64 = 100;
+}
+
+pub struct TreasuryAccountGetter;
+impl frame_support::traits::Get<u64> for TreasuryAccountGetter {
+    fn get() -> u64 {
+        TreasuryAccountId::get()
+    }
 }
 
 impl pallet_claw_token::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
     type Currency = Balances;
+    type TreasuryAccount = TreasuryAccountGetter;
     type AirdropPool = TestAirdropPool;
     type MaxContributionScore = ConstU64<{ u64::MAX }>;
 }
@@ -69,7 +78,7 @@ fn new_test_ext() -> sp_io::TestExternalities {
         .unwrap();
 
     pallet_balances::GenesisConfig::<Test> {
-        balances: vec![(1, 1_000_000), (2, 1_000_000), (3, 1_000_000)],
+        balances: vec![(1, 1_000_000), (2, 1_000_000), (3, 1_000_000), (100, 10_000_000)],
         dev_accounts: Default::default(),
     }
     .assimilate_storage(&mut t)
@@ -348,7 +357,9 @@ fn multiple_contributors_proportional_claims() {
 #[test]
 fn treasury_spend_works() {
     new_test_ext().execute_with(|| {
+        let before = Balances::free_balance(1);
         assert_ok!(ClawTokenPallet::treasury_spend(root(), 1, 50_000));
+        assert_eq!(Balances::free_balance(1), before + 50_000);
     });
 }
 
@@ -387,10 +398,13 @@ fn treasury_spend_zero_amount() {
 }
 
 #[test]
-fn treasury_spend_large_amount() {
+fn treasury_spend_insufficient_balance() {
     new_test_ext().execute_with(|| {
-        // Large amount — just emits event, no balance checks in current impl
-        assert_ok!(ClawTokenPallet::treasury_spend(root(), 1, u128::MAX));
+        // Treasury only has 10_000_000 — requesting more should fail
+        assert_noop!(
+            ClawTokenPallet::treasury_spend(root(), 1, 999_999_999_999),
+            crate::pallet::Error::<Test>::InsufficientTreasuryBalance
+        );
     });
 }
 
