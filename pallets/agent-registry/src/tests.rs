@@ -51,6 +51,10 @@ fn account(id: u64) -> <Test as frame_system::Config>::RuntimeOrigin {
     frame_system::RawOrigin::Signed(id).into()
 }
 
+fn root() -> <Test as frame_system::Config>::RuntimeOrigin {
+    frame_system::RawOrigin::Root.into()
+}
+
 // ========== Registration Tests ==========
 
 #[test]
@@ -412,7 +416,7 @@ fn update_metadata_preserves_did_and_reputation() {
         ));
 
         // Change reputation first
-        assert_ok!(AgentRegistryPallet::update_reputation(account(1), 0, 1000));
+        assert_ok!(AgentRegistryPallet::update_reputation(root(), 0, 1000));
 
         // Update metadata
         assert_ok!(AgentRegistryPallet::update_metadata(
@@ -439,12 +443,12 @@ fn update_reputation_works() {
         ));
 
         // Increase reputation
-        assert_ok!(AgentRegistryPallet::update_reputation(account(1), 0, 1000));
+        assert_ok!(AgentRegistryPallet::update_reputation(root(), 0, 1000));
         let agent = AgentRegistry::<Test>::get(0).unwrap();
         assert_eq!(agent.reputation, 6000);
 
         // Decrease reputation
-        assert_ok!(AgentRegistryPallet::update_reputation(account(1), 0, -2000));
+        assert_ok!(AgentRegistryPallet::update_reputation(root(), 0, -2000));
         let agent = AgentRegistry::<Test>::get(0).unwrap();
         assert_eq!(agent.reputation, 4000);
     });
@@ -459,7 +463,7 @@ fn update_reputation_emits_event() {
             b"{}".to_vec()
         ));
 
-        assert_ok!(AgentRegistryPallet::update_reputation(account(1), 0, 500));
+        assert_ok!(AgentRegistryPallet::update_reputation(root(), 0, 500));
 
         System::assert_has_event(
             Event::<Test>::ReputationChanged {
@@ -482,7 +486,7 @@ fn update_reputation_clamps_at_max() {
         ));
 
         // Try to exceed max (10000)
-        assert_ok!(AgentRegistryPallet::update_reputation(account(1), 0, 9999));
+        assert_ok!(AgentRegistryPallet::update_reputation(root(), 0, 9999));
         let agent = AgentRegistry::<Test>::get(0).unwrap();
         assert_eq!(agent.reputation, 10000); // Clamped at max
     });
@@ -499,7 +503,7 @@ fn update_reputation_clamps_at_min() {
 
         // Try to go below 0
         assert_ok!(AgentRegistryPallet::update_reputation(
-            account(1),
+            root(),
             0,
             -20000
         ));
@@ -517,14 +521,14 @@ fn update_reputation_zero_delta() {
             b"{}".to_vec()
         ));
 
-        assert_ok!(AgentRegistryPallet::update_reputation(account(1), 0, 0));
+        assert_ok!(AgentRegistryPallet::update_reputation(root(), 0, 0));
         let agent = AgentRegistry::<Test>::get(0).unwrap();
         assert_eq!(agent.reputation, 5000); // Unchanged
     });
 }
 
 #[test]
-fn update_reputation_by_non_owner_allowed() {
+fn update_reputation_requires_root() {
     new_test_ext().execute_with(|| {
         assert_ok!(AgentRegistryPallet::register_agent(
             account(1),
@@ -532,8 +536,14 @@ fn update_reputation_by_non_owner_allowed() {
             b"{}".to_vec()
         ));
 
-        // Anyone can update reputation (design choice per the code comment)
-        assert_ok!(AgentRegistryPallet::update_reputation(account(2), 0, 100));
+        // Signed origins are rejected — only root can update reputation
+        assert_noop!(
+            AgentRegistryPallet::update_reputation(account(2), 0, 100),
+            sp_runtime::DispatchError::BadOrigin
+        );
+
+        // Root succeeds
+        assert_ok!(AgentRegistryPallet::update_reputation(root(), 0, 100));
         let agent = AgentRegistry::<Test>::get(0).unwrap();
         assert_eq!(agent.reputation, 5100);
     });
@@ -543,7 +553,7 @@ fn update_reputation_by_non_owner_allowed() {
 fn update_reputation_fails_for_nonexistent_agent() {
     new_test_ext().execute_with(|| {
         assert_noop!(
-            AgentRegistryPallet::update_reputation(account(1), 999, 100),
+            AgentRegistryPallet::update_reputation(root(), 999, 100),
             crate::Error::<Test>::AgentNotFound
         );
     });
@@ -560,7 +570,7 @@ fn update_reputation_updates_last_active() {
 
         System::set_block_number(99);
 
-        assert_ok!(AgentRegistryPallet::update_reputation(account(1), 0, 100));
+        assert_ok!(AgentRegistryPallet::update_reputation(root(), 0, 100));
         let agent = AgentRegistry::<Test>::get(0).unwrap();
         assert_eq!(agent.last_active, 99);
     });
@@ -660,7 +670,7 @@ fn cannot_update_deregistered_agent() {
 
         // Cannot update reputation
         assert_noop!(
-            AgentRegistryPallet::update_reputation(account(1), 0, 100),
+            AgentRegistryPallet::update_reputation(root(), 0, 100),
             crate::Error::<Test>::AgentAlreadyDeregistered
         );
 
@@ -854,7 +864,7 @@ fn suspended_agent_can_be_updated() {
         ));
 
         // And reputation updated
-        assert_ok!(AgentRegistryPallet::update_reputation(account(1), 0, -500));
+        assert_ok!(AgentRegistryPallet::update_reputation(root(), 0, -500));
         let agent = AgentRegistry::<Test>::get(0).unwrap();
         assert_eq!(agent.reputation, 4500);
     });
@@ -910,7 +920,7 @@ fn multiple_operations_sequence() {
             b"{\"v\": 2}".to_vec()
         ));
 
-        assert_ok!(AgentRegistryPallet::update_reputation(account(1), 0, 2000));
+        assert_ok!(AgentRegistryPallet::update_reputation(root(), 0, 2000));
 
         assert_ok!(AgentRegistryPallet::set_agent_status(
             account(1),
