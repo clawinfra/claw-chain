@@ -304,6 +304,8 @@ pub mod pallet {
         ChannelIdTooLong,
         InvalidAgent,
         PendingPacketLimitExceeded,
+        /// Channel is not in the expected state for this operation.
+        InvalidChannelState,
     }
 
     // =========================================================
@@ -769,6 +771,52 @@ pub mod pallet {
                 chain_id,
                 remote_agent_id: bounded_remote_agent_id,
                 local_agent_id,
+            });
+
+            Ok(())
+        }
+
+        /// Confirm channel opening — transitions channel from Init → Open.
+        ///
+        /// M3 fix: without this extrinsic channels were created in `ChannelState::Init`
+        /// and had no path to `ChannelState::Open`, making `send_packet` / `receive_packet`
+        /// always fail with `ChannelNotOpen`.
+        ///
+        /// Callable by any trusted relayer after the counterparty has acknowledged the
+        /// channel open handshake.
+        #[pallet::call_index(10)]
+        #[pallet::weight(T::DbWeight::get().reads_writes(1, 1))]
+        pub fn open_channel_confirm(
+            origin: OriginFor<T>,
+            channel_id: Vec<u8>,
+        ) -> DispatchResult {
+            let who = ensure_signed(origin)?;
+            Self::ensure_trusted_relayer(&who)?;
+
+            let bounded_channel_id: ChannelId<T> = channel_id
+                .clone()
+                .try_into()
+                .map_err(|_| Error::<T>::ChannelIdTooLong)?;
+
+            let (counterparty_chain, counterparty_channel) =
+                Channels::<T>::try_mutate(&bounded_channel_id, |maybe_channel| {
+                    let channel =
+                        maybe_channel.as_mut().ok_or(Error::<T>::ChannelNotFound)?;
+                    ensure!(
+                        channel.state == ChannelState::Init,
+                        Error::<T>::InvalidChannelState
+                    );
+                    channel.state = ChannelState::Open;
+                    Ok::<_, DispatchError>((
+                        channel.counterparty_chain_id.to_vec(),
+                        channel.counterparty_channel_id.to_vec(),
+                    ))
+                })?;
+
+            Self::deposit_event(Event::ChannelOpened {
+                channel_id,
+                counterparty_chain,
+                counterparty_channel,
             });
 
             Ok(())

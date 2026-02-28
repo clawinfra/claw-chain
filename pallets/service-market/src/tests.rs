@@ -1170,3 +1170,26 @@ fn listing_count_starts_at_zero() {
         assert_eq!(DisputeCount::<Test>::get(), 0);
     });
 }
+
+// =========================================================
+// M2 — RequirementsEmpty enforcement
+// =========================================================
+
+#[test]
+fn invoke_service_rejects_empty_requirements() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(list_service_default(ALICE));
+
+        assert_noop!(
+            ServiceMarket::invoke_service(
+                RuntimeOrigin::signed(BOB),
+                0,
+                vec![], // empty requirements — must be rejected
+                None,
+                100,
+                100,
+            ),
+            Error::<Test>::RequirementsEmpty
+        );
+    });
+}

@@ -605,3 +605,115 @@ fn register_cross_chain_agent_validates_agent_exists() {
         );
     });
 }
+
+// =========================================================
+// M3 — open_channel_confirm tests
+// =========================================================
+
+/// Helper: open a channel in Init state (without auto-transitioning to Open).
+fn open_channel_init_only(channel_num: u64) -> Vec<u8> {
+    let counterparty_chain = format!("chain-{}", channel_num).into_bytes();
+    let counterparty_channel = format!("remote-channel-{}", channel_num).into_bytes();
+
+    assert_ok!(IbcLite::open_channel(
+        frame_system::RawOrigin::Root.into(),
+        counterparty_chain,
+        counterparty_channel,
+    ));
+
+    format!("channel-{}", channel_num).into_bytes()
+}
+
+#[test]
+fn open_channel_confirm_transitions_init_to_open() {
+    new_test_ext().execute_with(|| {
+        // Add trusted relayer
+        assert_ok!(IbcLite::add_relayer(frame_system::RawOrigin::Root.into(), 10));
+
+        let channel_id = open_channel_init_only(0);
+
+        // Verify channel starts in Init state
+        let bounded_id: ChannelId<Runtime> = channel_id.clone().try_into().unwrap();
+        let channel = Channels::<Runtime>::get(&bounded_id).unwrap();
+        assert_eq!(channel.state, ChannelState::Init);
+
+        // Confirm the channel open — should transition to Open
+        assert_ok!(IbcLite::open_channel_confirm(
+            frame_system::RawOrigin::Signed(10).into(),
+            channel_id.clone(),
+        ));
+
+        let channel = Channels::<Runtime>::get(&bounded_id).unwrap();
+        assert_eq!(channel.state, ChannelState::Open, "channel must be Open after confirm");
+    });
+}
+
+#[test]
+fn open_channel_confirm_rejects_non_init() {
+    new_test_ext().execute_with(|| {
+        // Add trusted relayer
+        assert_ok!(IbcLite::add_relayer(frame_system::RawOrigin::Root.into(), 10));
+
+        let channel_id = open_channel_init_only(0);
+
+        // First confirm: Init → Open
+        assert_ok!(IbcLite::open_channel_confirm(
+            frame_system::RawOrigin::Signed(10).into(),
+            channel_id.clone(),
+        ));
+
+        // Second confirm on an already-Open channel must fail with InvalidChannelState
+        assert_err!(
+            IbcLite::open_channel_confirm(
+                frame_system::RawOrigin::Signed(10).into(),
+                channel_id.clone(),
+            ),
+            Error::<Runtime>::InvalidChannelState
+        );
+    });
+}
+
+#[test]
+fn open_channel_confirm_requires_trusted_relayer() {
+    new_test_ext().execute_with(|| {
+        let channel_id = open_channel_init_only(0);
+
+        // Unsigned-ish but signed by account 99 who is NOT a relayer
+        assert_err!(
+            IbcLite::open_channel_confirm(
+                frame_system::RawOrigin::Signed(99).into(),
+                channel_id,
+            ),
+            Error::<Runtime>::NotTrustedRelayer
+        );
+    });
+}
+
+#[test]
+fn open_channel_confirm_allows_send_packet_after_confirm() {
+    new_test_ext().execute_with(|| {
+        // Add trusted relayer
+        assert_ok!(IbcLite::add_relayer(frame_system::RawOrigin::Root.into(), 10));
+
+        let channel_id = open_channel_init_only(0);
+
+        // Confirm open
+        assert_ok!(IbcLite::open_channel_confirm(
+            frame_system::RawOrigin::Signed(10).into(),
+            channel_id.clone(),
+        ));
+
+        // Now send_packet should succeed (channel is Open)
+        let payload = crate::types::PacketPayload::<Runtime>::Raw(
+            frame_support::BoundedVec::try_from(b"hello".to_vec()).unwrap(),
+        );
+        assert_ok!(IbcLite::send_packet(
+            frame_system::RawOrigin::Signed(1).into(),
+            channel_id,
+            b"chain-0".to_vec(),
+            b"remote-channel-0".to_vec(),
+            None,
+            payload,
+        ));
+    });
+}
