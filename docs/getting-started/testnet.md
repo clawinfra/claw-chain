@@ -38,7 +38,7 @@ From here you can:
 ## Connect via TypeScript SDK
 
 ```ts
-import { ClawChainClient } from "clawchain-sdk";
+import { ClawChainClient } from "@clawinfra/clawchain-sdk";
 
 const client = new ClawChainClient("wss://testnet.clawchain.win");
 await client.connect();

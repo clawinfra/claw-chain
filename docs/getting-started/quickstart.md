@@ -53,11 +53,11 @@ You should see blocks being produced and can interact with all ClawChain pallets
 Using the TypeScript SDK:
 
 ```bash
-npm install clawchain-sdk
+npm install @clawinfra/clawchain-sdk
 ```
 
 ```ts
-import { ClawChainClient, AgentRegistry } from "clawchain-sdk";
+import { ClawChainClient, AgentRegistry } from "@clawinfra/clawchain-sdk";
 import { Keyring } from "@polkadot/keyring";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 

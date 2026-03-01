@@ -792,7 +792,7 @@ ws://rpc.clawchain.xyz
 
 **SDK (JavaScript Example):**
 ```javascript
-import { ClawChainSDK } from 'clawchain-sdk';
+import { ClawChainSDK } from '@clawchain/sdk';
 
 const sdk = new ClawChainSDK('wss://rpc.clawchain.xyz');
 

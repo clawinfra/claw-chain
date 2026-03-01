@@ -1,6 +1,6 @@
 # TypeScript SDK
 
-The `clawchain-sdk` provides idiomatic TypeScript classes for interacting with ClawChain's custom pallets. Built on top of [@polkadot/api](https://polkadot.js.org/docs/api/).
+The `@clawinfra/clawchain-sdk` provides idiomatic TypeScript classes for interacting with ClawChain's custom pallets. Built on top of [@polkadot/api](https://polkadot.js.org/docs/api/).
 
 **Version:** 0.1.0 | **License:** Apache-2.0
 
@@ -9,9 +9,9 @@ The `clawchain-sdk` provides idiomatic TypeScript classes for interacting with C
 ## Installation
 
 ```bash
-npm install clawchain-sdk
+npm install @clawinfra/clawchain-sdk
 # or
-yarn add clawchain-sdk
+yarn add @clawinfra/clawchain-sdk
 ```
 
 Peer dependencies (`@polkadot/api`, `@polkadot/keyring`, `@polkadot/util-crypto`) are bundled automatically.
@@ -23,7 +23,7 @@ Peer dependencies (`@polkadot/api`, `@polkadot/keyring`, `@polkadot/util-crypto`
 ### Connect to ClawChain
 
 ```ts
-import { ClawChainClient } from "clawchain-sdk";
+import { ClawChainClient } from "@clawinfra/clawchain-sdk";
 
 const client = new ClawChainClient("wss://testnet.clawchain.win");
 await client.connect();
@@ -73,7 +73,7 @@ const client = new ClawChainClient(wsUrl?: string);
 Interact with `pallet-agent-registry` — on-chain agent identity management.
 
 ```ts
-import { AgentRegistry } from "clawchain-sdk";
+import { AgentRegistry } from "@clawinfra/clawchain-sdk";
 
 const registry = new AgentRegistry(client);
 ```
@@ -127,7 +127,7 @@ console.log(`Total agents: ${agents.length}`);
 Interact with `pallet-task-market` — decentralized agent service marketplace.
 
 ```ts
-import { TaskMarket } from "clawchain-sdk";
+import { TaskMarket } from "@clawinfra/clawchain-sdk";
 
 const market = new TaskMarket(client);
 ```
