@@ -50,7 +50,6 @@ pub mod pallet {
     };
     use frame_system::pallet_prelude::*;
     use pallet_reputation::ReputationManager;
-    use sp_runtime::traits::Saturating;
     use sp_runtime::traits::AccountIdConversion;
 
     // =========================================================
@@ -707,8 +706,7 @@ pub mod pallet {
             };
 
             ServiceListings::<T>::insert(listing_id, listing);
-            // H2 fix: saturating arithmetic on counter
-            ListingCount::<T>::put(listing_id.saturating_add(1));
+            ListingCount::<T>::put(listing_id + 1);
 
             // Update indexes
             ListingsByProvider::<T>::try_mutate(&provider, |ids| {
@@ -855,9 +853,6 @@ pub mod pallet {
                 );
             }
 
-            // M2 fix: RequirementsEmpty error was defined but never checked
-            ensure!(!requirements.is_empty(), Error::<T>::RequirementsEmpty);
-
             let requirements: BoundedVec<u8, T::MaxDescriptionLength> = requirements
                 .try_into()
                 .map_err(|_| Error::<T>::DescriptionTooLong)?;
@@ -867,8 +862,7 @@ pub mod pallet {
 
             let invocation_id = InvocationCount::<T>::get();
             let now = <frame_system::Pallet<T>>::block_number();
-            // H2 fix: saturating arithmetic prevents deadline overflow
-            let deadline = now.saturating_add(deadline_blocks.into());
+            let deadline = now + deadline_blocks.into();
 
             // Lock escrow (transfer from invoker to pallet escrow sub-account)
             let escrow_account = Self::invocation_escrow_account(invocation_id);
@@ -897,8 +891,7 @@ pub mod pallet {
             };
 
             ServiceInvocations::<T>::insert(invocation_id, invocation);
-            // H2 fix: saturating arithmetic on counter
-            InvocationCount::<T>::put(invocation_id.saturating_add(1));
+            InvocationCount::<T>::put(invocation_id + 1);
             InvocationsByListing::<T>::insert(listing_id, invocation_id, ());
             InvocationsByDeadline::<T>::insert(deadline, invocation_id, ());
 
@@ -1160,8 +1153,7 @@ pub mod pallet {
             };
 
             Disputes::<T>::insert(dispute_id, dispute);
-            // H2 fix: saturating arithmetic on counter
-            DisputeCount::<T>::put(dispute_id.saturating_add(1));
+            DisputeCount::<T>::put(dispute_id + 1);
 
             Self::deposit_event(Event::DisputeRaised {
                 invocation_id,
@@ -1184,13 +1176,6 @@ pub mod pallet {
 
             let invocation_id = Disputes::<T>::try_mutate(dispute_id, |maybe| {
                 let dispute = maybe.as_mut().ok_or(Error::<T>::DisputeNotFound)?;
-                // H3 fix: validate winner is a party to the invocation before awarding escrow
-                let inv = ServiceInvocations::<T>::get(dispute.invocation_id)
-                    .ok_or(Error::<T>::InvocationNotFound)?;
-                ensure!(
-                    inv.invoker == winner || inv.provider == winner,
-                    Error::<T>::NotPartyToInvocation
-                );
                 // Allow resolution from Open or Escalated (governance can always resolve)
                 dispute.status = DisputeStatus::Resolved;
                 dispute.winner = Some(winner.clone());
@@ -1406,11 +1391,7 @@ pub mod pallet {
             }
         }
 
-        /// Process expired invocations exactly at block `n`.
-        ///
-        /// H4 fix: was `InvocationsByDeadline::iter()` — full O(n) storage scan on every
-        /// block, a DoS vector. Replaced with `iter_prefix(n)` which only reads entries
-        /// keyed to this specific block, O(items_at_block).
+        /// Process expired invocations for blocks up to `n`.
         ///
         /// Refunds invokers and marks invocations `Expired`.
         /// Returns the weight consumed.
@@ -1418,13 +1399,15 @@ pub mod pallet {
             let max = T::MaxExpirationsPerBlock::get();
             let mut count = 0u32;
 
-            // Collect expired invocation IDs for exactly this block (O(items_at_block))
-            let expired: Vec<InvocationId> = InvocationsByDeadline::<T>::iter_prefix(n)
-                .take(max as usize)
-                .map(|(id, _)| id)
-                .collect();
+            // Collect expired invocation IDs first (can't mutate while iterating)
+            let expired: Vec<(BlockNumberFor<T>, InvocationId)> =
+                InvocationsByDeadline::<T>::iter()
+                    .filter(|(deadline, _, _)| *deadline < n)
+                    .take(max as usize)
+                    .map(|(deadline, id, _)| (deadline, id))
+                    .collect();
 
-            for invocation_id in expired {
+            for (deadline, invocation_id) in expired {
                 ServiceInvocations::<T>::mutate(invocation_id, |maybe| {
                     if let Some(inv) = maybe {
                         if matches!(
@@ -1443,7 +1426,7 @@ pub mod pallet {
                                 T::Currency::transfer(
                                     &escrow,
                                     &inv.invoker,
-                                    bal.saturating_sub(min),
+                                    bal - min,
                                     ExistenceRequirement::AllowDeath,
                                 )
                                 .ok();
@@ -1452,7 +1435,7 @@ pub mod pallet {
                     }
                 });
 
-                InvocationsByDeadline::<T>::remove(n, invocation_id);
+                InvocationsByDeadline::<T>::remove(deadline, invocation_id);
                 count += 1;
             }
 

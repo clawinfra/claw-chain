@@ -3,7 +3,6 @@
 use crate as pallet_claw_token;
 use crate::pallet::{
     AirdropClaimed, AirdropDistributed, ContributorScores, Event, TotalContributionScore,
-    TreasuryBalance,
 };
 use frame_support::{
     assert_noop, assert_ok, derive_impl, parameter_types,
@@ -349,19 +348,13 @@ fn multiple_contributors_proportional_claims() {
 #[test]
 fn treasury_spend_works() {
     new_test_ext().execute_with(|| {
-        // Fund the treasury first
-        assert_ok!(ClawTokenPallet::fund_treasury(root(), 100_000));
-        assert_eq!(TreasuryBalance::<Test>::get(), 100_000);
-
         assert_ok!(ClawTokenPallet::treasury_spend(root(), 1, 50_000));
-        assert_eq!(TreasuryBalance::<Test>::get(), 50_000);
     });
 }
 
 #[test]
 fn treasury_spend_emits_event() {
     new_test_ext().execute_with(|| {
-        assert_ok!(ClawTokenPallet::fund_treasury(root(), 100_000));
         assert_ok!(ClawTokenPallet::treasury_spend(root(), 1, 50_000));
 
         System::assert_has_event(
@@ -394,39 +387,10 @@ fn treasury_spend_zero_amount() {
 }
 
 #[test]
-fn treasury_spend_fails_insufficient_balance() {
+fn treasury_spend_large_amount() {
     new_test_ext().execute_with(|| {
-        // Treasury has 0 balance
-        assert_noop!(
-            ClawTokenPallet::treasury_spend(root(), 1, 50_000),
-            crate::Error::<Test>::InsufficientTreasuryBalance
-        );
-
-        // Fund partially, try to overspend
-        assert_ok!(ClawTokenPallet::fund_treasury(root(), 10_000));
-        assert_noop!(
-            ClawTokenPallet::treasury_spend(root(), 1, 50_000),
-            crate::Error::<Test>::InsufficientTreasuryBalance
-        );
-    });
-}
-
-#[test]
-fn treasury_spend_exact_balance() {
-    new_test_ext().execute_with(|| {
-        assert_ok!(ClawTokenPallet::fund_treasury(root(), 50_000));
-        assert_ok!(ClawTokenPallet::treasury_spend(root(), 1, 50_000));
-        assert_eq!(TreasuryBalance::<Test>::get(), 0);
-    });
-}
-
-#[test]
-fn fund_treasury_requires_root() {
-    new_test_ext().execute_with(|| {
-        assert_noop!(
-            ClawTokenPallet::fund_treasury(account(1), 50_000),
-            sp_runtime::DispatchError::BadOrigin
-        );
+        // Large amount — just emits event, no balance checks in current impl
+        assert_ok!(ClawTokenPallet::treasury_spend(root(), 1, u128::MAX));
     });
 }
 

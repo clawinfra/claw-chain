@@ -25,8 +25,8 @@ fn send_msg(sender: u64, receiver: u64) {
         receiver,
         zero_hash(),
         zero_nonce(),
-        0,    // permanent
-        0,    // no pay-for-reply
+        0, // permanent
+        0, // no pay-for-reply
         None,
         None,
     ));

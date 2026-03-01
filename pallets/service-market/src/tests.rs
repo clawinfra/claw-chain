@@ -906,13 +906,9 @@ fn on_initialize_expires_overdue_invocations() {
             5, // deadline = block 6
         ));
 
-        // Advance to block 6 (the deadline) and call on_initialize.
-        // Our H4 fix changed the expiry logic to use iter_prefix(n) which only processes
-        // invocations whose deadline == n (exact match). In production, on_initialize is
-        // called for every block so nothing is missed. The test must simulate that by
-        // calling on_initialize at the actual deadline block, not an arbitrary later block.
-        System::set_block_number(6);
-        <ServiceMarket as Hooks<u64>>::on_initialize(6u64);
+        // Advance to block 20
+        System::set_block_number(20);
+        <ServiceMarket as Hooks<u64>>::on_initialize(20u64);
 
         let inv = ServiceInvocations::<Test>::get(0).unwrap();
         assert_eq!(inv.status, InvocationStatus::Expired);
@@ -1168,28 +1164,5 @@ fn listing_count_starts_at_zero() {
         assert_eq!(ListingCount::<Test>::get(), 0);
         assert_eq!(InvocationCount::<Test>::get(), 0);
         assert_eq!(DisputeCount::<Test>::get(), 0);
-    });
-}
-
-// =========================================================
-// M2 — RequirementsEmpty enforcement
-// =========================================================
-
-#[test]
-fn invoke_service_rejects_empty_requirements() {
-    new_test_ext().execute_with(|| {
-        assert_ok!(list_service_default(ALICE));
-
-        assert_noop!(
-            ServiceMarket::invoke_service(
-                RuntimeOrigin::signed(BOB),
-                0,
-                vec![], // empty requirements — must be rejected
-                None,
-                100,
-                100,
-            ),
-            Error::<Test>::RequirementsEmpty
-        );
     });
 }

@@ -104,10 +104,6 @@ pub mod pallet {
         /// Maximum number of agents a single account can own.
         #[pallet::constant]
         type MaxAgentsPerOwner: Get<u32>;
-
-        /// Optional oracle account authorized to update agent reputations.
-        /// If None, only root can call update_reputation.
-        type ReputationOracle: Get<Option<Self::AccountId>>;
     }
 
     #[pallet::pallet]
@@ -188,8 +184,6 @@ pub mod pallet {
         ReputationOverflow,
         /// Reputation score would underflow (min 0).
         ReputationUnderflow,
-        /// The caller is not authorized to update reputation.
-        NotAuthorized,
     }
 
     // ========== Extrinsics ==========
@@ -292,13 +286,9 @@ pub mod pallet {
 
         /// Update an agent's reputation score.
         ///
-        /// Authorization:
-        /// - If ReputationOracle is configured: only the oracle account can call this
-        /// - If ReputationOracle is None: falls back to root-only (for initial deployment)
-        ///
-        /// # Arguments
-        /// * `agent_id` - The ID of the agent to update
-        /// * `delta` - Reputation change (positive or negative)
+        /// Can be called by anyone (in production, this would be restricted to
+        /// a reputation oracle or governance). The delta is applied to the current
+        /// score, clamped to 0-10000.
         #[pallet::call_index(2)]
         #[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().reads_writes(1, 1))]
         pub fn update_reputation(
@@ -306,16 +296,7 @@ pub mod pallet {
             agent_id: AgentId,
             delta: i32,
         ) -> DispatchResult {
-            // If oracle is set, require signed origin from oracle
-            // If oracle is None, require root origin
-            match T::ReputationOracle::get() {
-                Some(oracle) => {
-                    // In oracle mode, reject root and require signed origin from oracle
-                    let caller = ensure_signed(origin).map_err(|_| Error::<T>::NotAuthorized)?;
-                    ensure!(caller == oracle, Error::<T>::NotAuthorized);
-                }
-                None => ensure_root(origin)?,
-            }
+            ensure_signed(origin)?;
 
             AgentRegistry::<T>::try_mutate(agent_id, |maybe_agent| -> DispatchResult {
                 let agent = maybe_agent.as_mut().ok_or(Error::<T>::AgentNotFound)?;

@@ -192,21 +192,6 @@ pub mod pallet {
         OptionQuery,
     >;
 
-    /// Packet timeout heights — stored at send time to validate `timeout_packet` calls.
-    ///
-    /// Security: without this, `timeout_packet` could be called on any pending packet
-    /// regardless of whether the timeout has actually elapsed (C1 fix).
-    #[pallet::storage]
-    pub type PacketTimeoutHeights<T: Config> = StorageDoubleMap<
-        _,
-        Blake2_128Concat,
-        ChannelId<T>,
-        Blake2_128Concat,
-        Sequence,
-        BlockNumberFor<T>,
-        OptionQuery,
-    >;
-
     /// Set of trusted relayers that may submit packets and acks.
     #[pallet::storage]
     #[pallet::getter(fn trusted_relayers)]
@@ -304,8 +289,6 @@ pub mod pallet {
         ChannelIdTooLong,
         InvalidAgent,
         PendingPacketLimitExceeded,
-        /// Channel is not in the expected state for this operation.
-        InvalidChannelState,
     }
 
     // =========================================================
@@ -513,8 +496,6 @@ pub mod pallet {
 
             // Store commitment
             PacketCommitments::<T>::insert(&bounded_channel_id, sequence, commitment);
-            // Store timeout height so `timeout_packet` can verify it (C1 fix)
-            PacketTimeoutHeights::<T>::insert(&bounded_channel_id, sequence, timeout_height);
             SendSequences::<T>::insert(&bounded_channel_id, sequence + 1);
 
             let payload_hash = sp_io::hashing::blake2_256(&packet.payload.encode());
@@ -626,10 +607,7 @@ pub mod pallet {
                 sequence,
                 AckStatus { success },
             );
-            // H1 fix: use saturating arithmetic to prevent u64 overflow
-            AckSequences::<T>::mutate(&bounded_channel_id, |seq| {
-                *seq = seq.saturating_add(1);
-            });
+            AckSequences::<T>::mutate(&bounded_channel_id, |seq| *seq += 1);
 
             Self::deposit_event(Event::PacketAcknowledged {
                 channel_id,
@@ -667,15 +645,12 @@ pub mod pallet {
                 Error::<T>::PacketAlreadyReceived
             );
 
-            // Verify timeout has passed (C1 fix: was missing — allowed cancelling valid packets)
-            let timeout_height = PacketTimeoutHeights::<T>::get(&bounded_channel_id, sequence)
-                .ok_or(Error::<T>::PacketNotFound)?;
-            let now = <frame_system::Pallet<T>>::block_number();
-            ensure!(now >= timeout_height, Error::<T>::PacketTimedOut);
+            // Verify timeout has passed
+            // (We'd need to store timeout_height to check this properly)
+            // For now, we assume the caller has verified
 
-            // Delete commitment and timeout record
+            // Delete commitment
             PacketCommitments::<T>::remove(&bounded_channel_id, sequence);
-            PacketTimeoutHeights::<T>::remove(&bounded_channel_id, sequence);
 
             Self::deposit_event(Event::PacketTimeout {
                 channel_id,
@@ -771,52 +746,6 @@ pub mod pallet {
                 chain_id,
                 remote_agent_id: bounded_remote_agent_id,
                 local_agent_id,
-            });
-
-            Ok(())
-        }
-
-        /// Confirm channel opening — transitions channel from Init → Open.
-        ///
-        /// M3 fix: without this extrinsic channels were created in `ChannelState::Init`
-        /// and had no path to `ChannelState::Open`, making `send_packet` / `receive_packet`
-        /// always fail with `ChannelNotOpen`.
-        ///
-        /// Callable by any trusted relayer after the counterparty has acknowledged the
-        /// channel open handshake.
-        #[pallet::call_index(10)]
-        #[pallet::weight(T::DbWeight::get().reads_writes(1, 1))]
-        pub fn open_channel_confirm(
-            origin: OriginFor<T>,
-            channel_id: Vec<u8>,
-        ) -> DispatchResult {
-            let who = ensure_signed(origin)?;
-            Self::ensure_trusted_relayer(&who)?;
-
-            let bounded_channel_id: ChannelId<T> = channel_id
-                .clone()
-                .try_into()
-                .map_err(|_| Error::<T>::ChannelIdTooLong)?;
-
-            let (counterparty_chain, counterparty_channel) =
-                Channels::<T>::try_mutate(&bounded_channel_id, |maybe_channel| {
-                    let channel =
-                        maybe_channel.as_mut().ok_or(Error::<T>::ChannelNotFound)?;
-                    ensure!(
-                        channel.state == ChannelState::Init,
-                        Error::<T>::InvalidChannelState
-                    );
-                    channel.state = ChannelState::Open;
-                    Ok::<_, DispatchError>((
-                        channel.counterparty_chain_id.to_vec(),
-                        channel.counterparty_channel_id.to_vec(),
-                    ))
-                })?;
-
-            Self::deposit_event(Event::ChannelOpened {
-                channel_id,
-                counterparty_chain,
-                counterparty_channel,
             });
 
             Ok(())

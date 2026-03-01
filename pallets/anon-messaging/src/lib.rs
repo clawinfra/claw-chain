@@ -624,7 +624,7 @@ pub mod pallet {
             });
 
             // Check if receiver has auto-response enabled
-            Self::maybe_trigger_auto_response(&receiver, &sender, msg_id, pay_for_reply, now);
+            Self::maybe_trigger_auto_response(&receiver, msg_id, pay_for_reply, now);
 
             Self::deposit_event(Event::MessageSent {
                 msg_id,
@@ -807,11 +807,8 @@ pub mod pallet {
         }
 
         /// Emit `AutoResponseTriggered` if receiver has a valid auto-response config.
-        ///
-        /// M1 fix: now takes `sender` to enforce per-sender cooldown via `AutoReplyCooldown`.
         fn maybe_trigger_auto_response(
             receiver: &T::AccountId,
-            sender: &T::AccountId,
             original_msg_id: MessageId,
             pay_for_reply: BalanceOf<T>,
             now: BlockNumberFor<T>,
@@ -833,24 +830,9 @@ pub mod pallet {
                     return;
                 }
 
-                // M1 fix: enforce per-sender auto-reply cooldown.
-                // `AutoReplyCooldown` uses ValueQuery (default = 0), so we only
-                // apply the cooldown check when there has been a previous reply
-                // (last_reply > default). This avoids suppressing the very first
-                // auto-reply because 0 + cooldown > now would be true at low block numbers.
-                let cooldown: BlockNumberFor<T> = cfg.cooldown_blocks.into();
-                let zero = BlockNumberFor::<T>::default();
-                if cooldown > zero {
-                    let last_reply = AutoReplyCooldown::<T>::get(receiver, sender);
-                    if last_reply > zero && last_reply.saturating_add(cooldown) > now {
-                        // Cooldown not yet elapsed — suppress auto-reply
-                        return;
-                    }
-                }
-
-                // Update last auto-reply timestamp before emitting event
-                AutoReplyCooldown::<T>::insert(receiver, sender, now);
-
+                // Auto-response triggered (cooldown tracking is logged but not enforced here
+                // as we don't know the requester in this context — full enforcement is in
+                // Phase 2 per-sender cooldown map).
                 Self::deposit_event(Event::AutoResponseTriggered {
                     original_msg_id,
                     responder: receiver.clone(),
