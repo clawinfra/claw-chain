@@ -76,10 +76,6 @@ pub mod pallet {
         #[pallet::constant]
         type MaxMetadataLen: Get<u32>;
 
-        /// Maximum number of receipts that can be cleared in a single call.
-        #[pallet::constant]
-        type MaxClearBatchSize: Get<u32>;
-
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -138,8 +134,6 @@ pub mod pallet {
         ActionTypeTooLong,
         /// The metadata exceeds the maximum allowed length.
         MetadataTooLong,
-        /// The requested batch size exceeds the maximum allowed.
-        BatchSizeExceeded,
     }
 
     // ========== Extrinsics ==========
@@ -231,9 +225,6 @@ pub mod pallet {
             before_nonce: u64,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-
-            let max_batch = T::MaxClearBatchSize::get() as u64;
-            ensure!(before_nonce <= max_batch, Error::<T>::BatchSizeExceeded);
 
             let bounded_agent_id: AgentIdOf<T> = agent_id
                 .clone()

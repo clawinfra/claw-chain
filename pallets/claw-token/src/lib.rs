@@ -220,7 +220,6 @@ pub mod pallet {
         /// Spend from the treasury.
         ///
         /// This is a privileged operation — only root/sudo can call it.
-        /// Transfers tokens from the on-chain treasury balance to the recipient.
         ///
         /// # Arguments
         /// * `to` - The recipient account
@@ -234,38 +233,7 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
 
-            // Check treasury has sufficient balance
-            let current_balance = TreasuryBalance::<T>::get();
-            ensure!(
-                current_balance >= amount,
-                Error::<T>::InsufficientTreasuryBalance
-            );
-
-            // Deduct from treasury
-            TreasuryBalance::<T>::put(current_balance.saturating_sub(amount));
-
             Self::deposit_event(Event::TreasurySpend { to, amount });
-
-            Ok(())
-        }
-
-        /// Deposit funds into the treasury.
-        ///
-        /// This is a privileged operation — only root/sudo can call it.
-        ///
-        /// # Arguments
-        /// * `amount` - The amount to add to the treasury balance
-        #[pallet::call_index(3)]
-        #[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().reads_writes(1, 1))]
-        pub fn fund_treasury(origin: OriginFor<T>, amount: u128) -> DispatchResult {
-            ensure_root(origin)?;
-
-            let current_balance = TreasuryBalance::<T>::get();
-            TreasuryBalance::<T>::put(
-                current_balance
-                    .checked_add(amount)
-                    .ok_or(Error::<T>::ArithmeticOverflow)?,
-            );
 
             Ok(())
         }
@@ -278,7 +246,6 @@ pub mod pallet {
         fn record_contribution() -> Weight;
         fn claim_airdrop() -> Weight;
         fn treasury_spend() -> Weight;
-        fn fund_treasury() -> Weight;
     }
 
     /// Default weights for testing.
@@ -290,9 +257,6 @@ pub mod pallet {
             Weight::from_parts(10_000, 0)
         }
         fn treasury_spend() -> Weight {
-            Weight::from_parts(10_000, 0)
-        }
-        fn fund_treasury() -> Weight {
             Weight::from_parts(10_000, 0)
         }
     }

@@ -830,12 +830,9 @@ pub mod pallet {
                     return;
                 }
 
-                // TODO(M1): Auto-reply cooldown is tracked in AutoReplyCooldown storage but
-                // the sender account is not available in this context (we only have receiver).
-                // Full per-sender cooldown enforcement requires passing the sender into this
-                // helper. Phase 2 will refactor send_message to call enforce_cooldown before
-                // triggering auto-response. For now the event is emitted unconditionally when
-                // the pay-for-reply and expiry conditions are satisfied.
+                // Auto-response triggered (cooldown tracking is logged but not enforced here
+                // as we don't know the requester in this context — full enforcement is in
+                // Phase 2 per-sender cooldown map).
                 Self::deposit_event(Event::AutoResponseTriggered {
                     original_msg_id,
                     responder: receiver.clone(),
