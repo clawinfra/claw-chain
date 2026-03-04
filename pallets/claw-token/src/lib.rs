@@ -232,6 +232,28 @@ pub mod pallet {
 
             Ok(())
         }
+
+        /// Deposit funds into the treasury.
+        ///
+        /// This is a privileged operation — only root/sudo can call it.
+        ///
+        /// # Arguments
+        /// * `amount` - The amount to add to the treasury balance
+        #[pallet::call_index(3)]
+        #[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().reads_writes(1, 1))]
+        pub fn fund_treasury(origin: OriginFor<T>, amount: u128) -> DispatchResult {
+            ensure_root(origin)?;
+
+            let current_balance = TreasuryBalance::<T>::get();
+            TreasuryBalance::<T>::put(
+                current_balance
+                    .checked_add(amount)
+                    .ok_or(Error::<T>::ArithmeticOverflow)?,
+            );
+
+            Ok(())
+        }
+
     }
 
     // ========== Weight Info Trait ==========
