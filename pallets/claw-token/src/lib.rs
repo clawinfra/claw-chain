@@ -80,6 +80,11 @@ pub mod pallet {
     #[pallet::getter(fn airdrop_distributed)]
     pub type AirdropDistributed<T: Config> = StorageValue<_, u128, ValueQuery>;
 
+    /// Treasury balance available for spending.
+    #[pallet::storage]
+    #[pallet::getter(fn treasury_balance)]
+    pub type TreasuryBalance<T: Config> = StorageValue<_, u128, ValueQuery>;
+
     // ========== Events ==========
 
     #[pallet::event]
