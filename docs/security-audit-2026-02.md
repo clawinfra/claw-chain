@@ -89,3 +89,4 @@ Service listings accumulate unbounded on-chain storage with no deposit mechanism
 #### L3 — `pallet-anon-messaging`: Sender-side message delete not implemented
 `delete_message` only works when the caller is the receiver (it looks up `Inbox::<T>::get(&who, msg_id)`). The sender authorization check on line `ensure!(envelope.sender == who || envelope.receiver == who, ...)` is unreachable for senders. Acknowledged design gap (Phase 2: add `SentIndex`).
 
+
