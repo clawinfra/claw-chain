@@ -4,7 +4,7 @@
 
 use super::*;
 use crate::mock::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok};
 
 // =========================================================
 // Helper Functions
@@ -409,6 +409,11 @@ fn timeout_packet_works() {
             PacketPayload::Raw(vec![1, 2, 3].try_into().unwrap()),
         ));
 
+        // Advance to block >= PacketTimeoutBlocks (100) so the timeout has elapsed.
+        // This is required after the C1 security fix: timeout_packet now verifies
+        // the timeout height before allowing cancellation.
+        frame_system::Pallet::<Runtime>::set_block_number(101);
+
         // Timeout
         assert_ok!(IbcLite::timeout_packet(
             frame_system::RawOrigin::Signed(1).into(),
@@ -420,6 +425,36 @@ fn timeout_packet_works() {
 
         // Commitment should be deleted
         assert!(!PacketCommitments::<Runtime>::contains_key(&bounded_id, 1));
+    });
+}
+
+/// Security regression: C1 fix — premature timeout must be rejected.
+/// Before the fix, `timeout_packet` had no timeout height check and could be
+/// called on any pending packet immediately after send.
+#[test]
+fn timeout_packet_rejected_before_timeout() {
+    new_test_ext().execute_with(|| {
+        let (channel_id, _, _) = open_channel_helper(0);
+
+        // Send a packet (timeout_height = block 1 + 100 = 101)
+        assert_ok!(IbcLite::send_packet(
+            frame_system::RawOrigin::Signed(1).into(),
+            channel_id.clone(),
+            b"chain-0".to_vec(),
+            b"remote-channel-0".to_vec(),
+            None,
+            PacketPayload::Raw(vec![1, 2, 3].try_into().unwrap()),
+        ));
+
+        // Attempting timeout at block 1 (before block 101) must fail
+        assert_noop!(
+            IbcLite::timeout_packet(
+                frame_system::RawOrigin::Signed(1).into(),
+                channel_id.clone(),
+                1,
+            ),
+            Error::<Runtime>::PacketTimedOut,
+        );
     });
 }
 

@@ -462,6 +462,15 @@ impl pallet_agent_registry::Config for Runtime {
     type MaxDidLength = ConstU32<256>;
     type MaxMetadataLength = ConstU32<4096>;
     type MaxAgentsPerOwner = ConstU32<100>;
+    type ReputationOracle = ReputationOracleAccount;
+}
+
+/// No reputation oracle configured — falls back to root-only reputation updates.
+pub struct ReputationOracleAccount;
+impl frame_support::traits::Get<Option<AccountId>> for ReputationOracleAccount {
+    fn get() -> Option<AccountId> {
+        None
+    }
 }
 
 /// Configure the CLAW token pallet.
@@ -585,6 +594,7 @@ impl pallet_agent_receipts::Config for Runtime {
     type MaxAgentIdLen = ConstU32<64>;
     type MaxActionTypeLen = ConstU32<64>;
     type MaxMetadataLen = ConstU32<512>;
+    type MaxClearBatchSize = ConstU32<1000>;
 }
 
 // =========================================================

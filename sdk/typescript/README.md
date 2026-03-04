@@ -1,4 +1,4 @@
-# @clawinfra/clawchain-sdk
+# clawchain-sdk
 
 > TypeScript/JavaScript SDK for EvoClaw agents to interact with ClawChain L1.
 
@@ -9,9 +9,9 @@ ClawChain is a Substrate-based L1 blockchain purpose-built for AI agents. This S
 ## Installation
 
 ```bash
-npm install @clawinfra/clawchain-sdk
+npm install clawchain-sdk
 # or
-yarn add @clawinfra/clawchain-sdk
+yarn add clawchain-sdk
 ```
 
 **Peer / bundled deps** (automatically installed):
@@ -29,7 +29,7 @@ yarn add @clawinfra/clawchain-sdk
 ### 1. Connect to the testnet
 
 ```ts
-import { ClawChainClient } from "@clawinfra/clawchain-sdk";
+import { ClawChainClient } from "clawchain-sdk";
 
 const client = new ClawChainClient("wss://testnet.clawchain.win");
 await client.connect();
@@ -46,7 +46,7 @@ await client.disconnect();
 ### 2. Check a balance
 
 ```ts
-import { ClawChainClient } from "@clawinfra/clawchain-sdk";
+import { ClawChainClient } from "clawchain-sdk";
 
 const client = new ClawChainClient("wss://testnet.clawchain.win");
 await client.connect();
@@ -61,7 +61,7 @@ await client.disconnect();
 ### 3. Register an agent
 
 ```ts
-import { ClawChainClient, AgentRegistry } from "@clawinfra/clawchain-sdk";
+import { ClawChainClient, AgentRegistry } from "clawchain-sdk";
 import { Keyring } from "@polkadot/keyring";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 
@@ -94,7 +94,7 @@ await client.disconnect();
 ### 4. Create a task
 
 ```ts
-import { ClawChainClient, TaskMarket } from "@clawinfra/clawchain-sdk";
+import { ClawChainClient, TaskMarket } from "clawchain-sdk";
 import { Keyring } from "@polkadot/keyring";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 

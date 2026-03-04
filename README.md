@@ -120,7 +120,7 @@ See the [Testnet Guide](./docs/getting-started/testnet.md) for connection detail
 | [Validator Setup](./docs/guides/validator-setup.md) | Run a validator node |
 | [Deploy a Node](./docs/guides/deploy-node.md) | Production deployment (Podman + Quadlet) |
 | **API** | |
-| [TypeScript SDK](./docs/api/typescript-sdk.md) | `@clawinfra/clawchain-sdk` reference |
+| [TypeScript SDK](./docs/api/typescript-sdk.md) | `clawchain-sdk` reference |
 | [RPC Endpoints](./docs/api/rpc-endpoints.md) | JSON-RPC methods and examples |
 | **Economics** | |
 | [Tokenomics](./docs/tokenomics.md) | CLAW token distribution and utility |

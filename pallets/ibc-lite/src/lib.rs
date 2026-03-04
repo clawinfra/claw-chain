@@ -192,6 +192,21 @@ pub mod pallet {
         OptionQuery,
     >;
 
+    /// Packet timeout heights — stored at send time to validate `timeout_packet` calls.
+    ///
+    /// Security: without this, `timeout_packet` could be called on any pending packet
+    /// regardless of whether the timeout has actually elapsed (C1 fix).
+    #[pallet::storage]
+    pub type PacketTimeoutHeights<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        ChannelId<T>,
+        Blake2_128Concat,
+        Sequence,
+        BlockNumberFor<T>,
+        OptionQuery,
+    >;
+
     /// Set of trusted relayers that may submit packets and acks.
     #[pallet::storage]
     #[pallet::getter(fn trusted_relayers)]
@@ -496,6 +511,8 @@ pub mod pallet {
 
             // Store commitment
             PacketCommitments::<T>::insert(&bounded_channel_id, sequence, commitment);
+            // Store timeout height so `timeout_packet` can verify it (C1 fix)
+            PacketTimeoutHeights::<T>::insert(&bounded_channel_id, sequence, timeout_height);
             SendSequences::<T>::insert(&bounded_channel_id, sequence + 1);
 
             let payload_hash = sp_io::hashing::blake2_256(&packet.payload.encode());
@@ -607,7 +624,10 @@ pub mod pallet {
                 sequence,
                 AckStatus { success },
             );
-            AckSequences::<T>::mutate(&bounded_channel_id, |seq| *seq += 1);
+            // H1 fix: use saturating arithmetic to prevent u64 overflow
+            AckSequences::<T>::mutate(&bounded_channel_id, |seq| {
+                *seq = seq.saturating_add(1);
+            });
 
             Self::deposit_event(Event::PacketAcknowledged {
                 channel_id,
@@ -645,12 +665,15 @@ pub mod pallet {
                 Error::<T>::PacketAlreadyReceived
             );
 
-            // Verify timeout has passed
-            // (We'd need to store timeout_height to check this properly)
-            // For now, we assume the caller has verified
+            // Verify timeout has passed (C1 fix: was missing — allowed cancelling valid packets)
+            let timeout_height = PacketTimeoutHeights::<T>::get(&bounded_channel_id, sequence)
+                .ok_or(Error::<T>::PacketNotFound)?;
+            let now = <frame_system::Pallet<T>>::block_number();
+            ensure!(now >= timeout_height, Error::<T>::PacketTimedOut);
 
-            // Delete commitment
+            // Delete commitment and timeout record
             PacketCommitments::<T>::remove(&bounded_channel_id, sequence);
+            PacketTimeoutHeights::<T>::remove(&bounded_channel_id, sequence);
 
             Self::deposit_event(Event::PacketTimeout {
                 channel_id,
