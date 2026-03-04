@@ -51,7 +51,6 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use pallet_reputation::ReputationManager;
     use sp_runtime::traits::AccountIdConversion;
-    use sp_runtime::traits::Saturating;
 
     // =========================================================
     // Type Aliases
