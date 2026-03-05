@@ -27,9 +27,4 @@ jobs:
           # Ignore advisories for Substrate transitive dependencies we cannot directly upgrade.
           # These are deep runtime deps (wasmtime, ring) pulled in by the Polkadot/Substrate
           # ecosystem — tracked upstream and will be resolved via substrate version bumps.
-          ignore: |
-            RUSTSEC-2025-0009
-            RUSTSEC-2026-0020
-            RUSTSEC-2026-0006
-            RUSTSEC-2026-0021
-            RUSTSEC-2025-0118
+          ignore: RUSTSEC-2025-0009,RUSTSEC-2026-0020,RUSTSEC-2026-0006,RUSTSEC-2026-0021,RUSTSEC-2025-0118
