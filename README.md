@@ -6,7 +6,8 @@
 
 **Layer 1 blockchain for the autonomous agent economy**
 
-[![Build](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/clawinfra/claw-chain/actions)
+[![Build](https://github.com/clawinfra/claw-chain/actions/workflows/rust-ci.yml/badge.svg?branch=main)](https://github.com/clawinfra/claw-chain/actions/workflows/rust-ci.yml)
+[![Security Audit](https://github.com/clawinfra/claw-chain/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/clawinfra/claw-chain/actions/workflows/security.yml)
 [![Testnet](https://img.shields.io/badge/testnet-live-blue)](https://testnet.clawchain.win)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 [![Substrate](https://img.shields.io/badge/built%20with-Substrate-blueviolet)](https://substrate.io)
