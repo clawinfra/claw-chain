@@ -58,7 +58,7 @@ sc-consensus-aura = { version = "0.55" }
 sc-consensus-grandpa = { version = "0.40" }
 sc-executor = { version = "0.47" }
 sc-keystore = { version = "39.0" }
-sc-network = { version = "0.55" }
+sc-network = { version = "0.55.1" }
 sc-offchain = { version = "50.0" }
 sc-service = { version = "0.56" }
 sc-telemetry = { version = "30.0" }
@@ -124,3 +124,8 @@ futures = { version = "0.3" }
 
 [profile.release]
 panic = "unwind"
+
+# Security: force libp2p-tls to >=0.6.2 which uses ring >=0.17.12 (fixes RUSTSEC-2025-0009)
+# rcgen 0.11 (via libp2p-tls 0.5) was the only consumer of ring 0.16
+[patch.crates-io]
+libp2p-tls = { version = "0.6.2" }
