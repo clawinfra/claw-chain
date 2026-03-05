@@ -27,8 +27,11 @@ jobs:
           # wasmtime 35.x is pulled by sc-executor-wasmtime (Substrate runtime).
           # Substrate has not yet upgraded beyond wasmtime 35 — tracked upstream.
           # Will be resolved when Substrate releases a version with wasmtime >=41.
+          # ring 0.16.20 is pulled by transitive deps; [patch.crates-io] libp2p-tls override
+          # doesn't fully eliminate it from the tree. Upgrade path blocked by Substrate deps.
           ignore: |
             RUSTSEC-2026-0020
             RUSTSEC-2026-0006
             RUSTSEC-2026-0021
             RUSTSEC-2025-0118
+            RUSTSEC-2025-0009
