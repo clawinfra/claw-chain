@@ -7,17 +7,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+*Nothing unreleased — see v0.6.1 below.*
+
+## [0.6.1] - 2026-03-05
+
+### Added
+- `cargo-audit` security workflow (`rustsec/audit-check@v2`) — runs on push, PR, and daily schedule
+- Validator key setup quick-reference guide (`docs/VALIDATOR-SETUP.md`)
+- Live CI badge and security audit badge in README
+
+### Changed
+- README build badge now tracks `rust-ci.yml` workflow on `main` (was a static shield badge)
+
+### Fixed
+- Security audit: resolved all findings — 1 Critical, 4 High, 3 Medium, 3 Low
+  - **CRITICAL:** Unrestricted `update_reputation` — now restricted to `ReputationOracle` origin (#52)
+  - **HIGH:** Uncapped `clear_receipts` batch size — added `MaxClearBatch` limit (#51)
+  - **HIGH:** `treasury_spend` unimplemented — implemented with proper origin checks (#51)
+  - **HIGH:** `pallet-ibc-lite` missing channel confirmation validation (#55)
+  - **HIGH:** `pallet-anon-messaging` missing sender authentication (#51)
+  - **MEDIUM:** Missing cooldown on reputation updates (#55)
+  - **MEDIUM:** `RequirementsEmpty` not enforced in service-market task creation (#55)
+  - **MEDIUM:** `open_channel_confirm` missing state transition check (#55)
+  - **LOW:** `cargo fmt` violations across agent-registry, claw-token, service-market
+  - **LOW:** Missing `ReputationOracle` type in runtime Config
+  - **LOW:** SDK install docs referenced wrong package name
+- Security audit report published: `docs/security-audit-2026-02.md`
+
+### Removed
+- Deprecated `golangci-lint` version field from CI configuration
+
+## [0.6.0] - 2026-02-27 (Beta Merge — Phase 2)
+
+### Added
+- `pallet-service-market` v2: full service listing, bidding, escrow, and dispute resolution (#42, #48)
+- `pallet-ibc-lite`: cross-chain messaging via IBC-lite protocol (#41, #46)
+- `pallet-anon-messaging`: Phase 1 anonymous agent communication (#43, #47)
+- OpenClaw integration plugin: DID registration + on-chain status skill (#36, #45)
+- PoA Bootstrap: mainnet chain spec, key generation tooling, systemd service, deployment scripts (#40)
+- Testnet faucet service (#33, #39)
+- ClawChain block explorer service with TypeScript frontend (#34, #38)
+- CLA (Contributor License Agreement) check workflow and signatures
+- `pallet-agent-equity-bridge` design doc (DRAFT)
+- Security architecture documentation
+- Comprehensive professional documentation overhaul
+- Whitepaper Section 2.0: Home Chain + Execution Environments architecture
+- Technical spec Section 2.0: Home Chain + Execution Environment model
+
+### Changed
+- Runtime `spec_version` bumped 100 → 200 for DID + governance pallet deployment
+- Roadmap updated with agent-native security model and Q2 milestones
+- SDK install reference updated to `@clawinfra/clawchain-sdk`
+
+### Fixed
+- Substrate API drift in `pallet-rpc-registry` and `pallet-gas-quota` tests
+- All `cargo clippy -D warnings` resolved across workspace
+- `cargo fmt` applied to all files
+- Explorer test coverage gaps and TypeScript BigInt error (#49)
+- CI: added `llvm`, `clang`, `protobuf-compiler`, `rust-src` to cargo check dependencies
+- CI: removed redundant WASM check step (handled by `substrate-wasm-builder` in `build.rs`)
+
+## [0.5.0] - 2026-02-25
+
 ### Added
 - `pallet-agent-receipts`: Verifiable AI agent activity attestation (ProvenanceChain)
-- TypeScript SDK v0.1.0: `@clawinfra/clawchain-sdk` with ClawChainClient, AgentRegistry, TaskMarket
+- TypeScript SDK v0.1.0: `@clawinfra/clawchain-sdk` with ClawChainClient, AgentRegistry, TaskMarket (#32)
 - Comprehensive pallet test suite: 186+ tests passing across all pallets
 - `pallet-gas-quota`: Hybrid gas model with stake-based free transaction quotas
 - `pallet-rpc-registry`: Agent RPC capability advertisement
 - `pallet-agent-did`: W3C-compatible decentralized identifiers (DIDs)
 - `pallet-quadratic-governance`: Quadratic voting with DID sybil resistance
+- Validator setup guide, Docker image, and docker-compose (#35)
+- `pallet-audit` and `rust-ci` CI workflows
 
 ### Changed
-- Reorganized documentation structure (`docs/getting-started/`, `docs/architecture/`, `docs/guides/`, `docs/api/`)
+- Reorganized documentation: `docs/getting-started/`, `docs/architecture/`, `docs/guides/`, `docs/api/`
 - Moved development artifacts to `docs/internal/`
 - Updated README.md with professional structure and badges
 
@@ -60,33 +124,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-## Release Notes
-
-### Unreleased
-- Next: Q2 2026 milestones including DID framework, quadratic governance live, and agent SDK enhancements
-
-### 0.3.0 (Testnet Genesis)
-- **Major milestone:** First public testnet deployment
-- Testnet validators: accepting applications
-- Block explorer and faucet planned for Q2 2026
-
-### 0.2.0
-- **Task economy launch:** Agents can now post tasks, bid, and complete work on-chain
-- **Reputation system:** On-chain trust scoring integrated with task outcomes
-
-### 0.1.0
-- **Project inception:** Foundation for agent-first blockchain
-
----
-
-## Future Releases
-
-| Version | Planned | Highlights |
-|---------|---------|-------------|
-| 0.4.0 | Q2 2026 | DID framework live, quadratic governance, agent SDK v0.2 |
-| 0.5.0 | Q3 2026 | Mainnet launch, airdrop distribution, 100+ validators |
-| 1.0.0 | Q4 2026 | Cross-chain bridges, 50K+ TPS, zero-knowledge privacy (Phase 2) |
-
----
-
-**For full roadmap details, see [ROADMAP.md](./ROADMAP.md).**
+[Unreleased]: https://github.com/clawinfra/claw-chain/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/clawinfra/claw-chain/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/clawinfra/claw-chain/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/clawinfra/claw-chain/compare/v0.3.0...v0.5.0
+[0.3.0]: https://github.com/clawinfra/claw-chain/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/clawinfra/claw-chain/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/clawinfra/claw-chain/releases/tag/v0.1.0
