@@ -17,8 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (permissioned to oracle/root), and a configurable multiplier curve (2.0x→0.6x) applied to positive
   `update_reputation` deltas. Existing scores are unaffected; backward compatible.
   See [`docs/rfc/RFC-002-reputation-regime-multiplier.md`](docs/rfc/RFC-002-reputation-regime-multiplier.md).
+- **RFC-003: `pallet-moral-foundation`** — Constitutional moral layer for the agent economy.
+  Every agent must attest to a binding moral framework before participating in task-market or service-market.
+  Introduces `attest_to_framework`, `update_empathy_score`, and `propose_framework_amendment` extrinsics.
+  Empathy scores feed into `pallet-reputation` weights. Amendments require quadratic governance supermajority (67%).
+  15-test suite covers attestation gates, governance permissions, and market integration.
+  See [`docs/rfc/RFC-003-moral-foundation.md`](docs/rfc/RFC-003-moral-foundation.md).
 - `docs/rfc/` directory — RFC process for new pallet proposals.
-- `docs/ARCHITECTURE.md` — unified pallet inventory (12 live + 2 planned).
+- `docs/ARCHITECTURE.md` — unified pallet inventory (12 live + 3 planned).
 
 ## [0.6.1] - 2026-03-05
 

@@ -6,7 +6,7 @@ This document provides a high-level overview of ClawChain's pallet architecture.
 
 ## Pallet Inventory
 
-ClawChain ships **12 production pallets** and has **2 pallets in planning/RFC phase**.
+ClawChain ships **12 production pallets** and has **3 pallets in planning/RFC phase**.
 
 ### Production Pallets (12)
 
@@ -25,12 +25,13 @@ ClawChain ships **12 production pallets** and has **2 pallets in planning/RFC ph
 | 11 | `pallet-anon-messaging` | `pallets/anon-messaging/` | ✅ Live | Phase 1 anonymous agent communication |
 | 12 | `pallet-service-market` | `pallets/service-market/` | ✅ Live | Service listing, bidding, escrow, and dispute resolution |
 
-### Planned Pallets (2 — RFC Phase)
+### Planned Pallets (3 — RFC Phase)
 
 | # | Pallet | RFC | Status | Purpose |
 |---|--------|-----|--------|---------|
 | 13 | `pallet-audit-attestation` | [RFC-001](./rfc/RFC-001-audit-attestation.md) | 🔜 Planned | On-chain verifiable audit attestations — query `is_audited()` before interacting |
 | 14 | Reputation Regime Multiplier | [RFC-002](./rfc/RFC-002-reputation-regime-multiplier.md) | 🔜 Planned | Fear-adaptive reputation weights in `pallet-reputation` |
+| 15 | `pallet-moral-foundation` | [RFC-003](./rfc/RFC-003-moral-foundation.md) | 🔜 Planned | Constitutional moral layer — agent attestation gates for task-market and service-market participation |
 
 ---
 
