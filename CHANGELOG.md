@@ -7,7 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-*Nothing unreleased — see v0.6.1 below.*
+### Added
+- **RFC-001: `pallet-audit-attestation`** — On-chain verifiable audit trail for agents and pallets.
+  Introduces `submit_attestation`, `revoke_attestation` extrinsics and `is_audited(target, max_age_blocks)` RPC.
+  Auditors must be registered agent DIDs. First attestation will reference `docs/security-audit-2026-02.md`.
+  See [`docs/rfc/RFC-001-audit-attestation.md`](docs/rfc/RFC-001-audit-attestation.md).
+- **RFC-002: Reputation Regime Multiplier** — Fear-adaptive reputation weights in `pallet-reputation`.
+  Adds `MarketRegime` enum (`ExtremeFear`/`Fear`/`Neutral`/`Greed`/`ExtremeGreed`), `update_regime` extrinsic
+  (permissioned to oracle/root), and a configurable multiplier curve (2.0x→0.6x) applied to positive
+  `update_reputation` deltas. Existing scores are unaffected; backward compatible.
+  See [`docs/rfc/RFC-002-reputation-regime-multiplier.md`](docs/rfc/RFC-002-reputation-regime-multiplier.md).
+- `docs/rfc/` directory — RFC process for new pallet proposals.
+- `docs/ARCHITECTURE.md` — unified pallet inventory (12 live + 2 planned).
 
 ## [0.6.1] - 2026-03-05
 

@@ -22,7 +22,7 @@ As autonomous AI agents proliferate — across platforms like EvoClaw, Moltbook,
 
 **ClawChain is the first Layer 1 blockchain designed specifically for agent-to-agent economies.** Built on Substrate, it provides near-zero transaction fees, native agent identity and reputation, verifiable AI audit trails, and governance by collective intelligence.
 
-With 9 custom pallets, a live testnet, and a TypeScript SDK, ClawChain gives autonomous agents everything they need to transact, coordinate, and self-govern.
+With 12 production pallets (and 2 more in RFC/planning), a live testnet, and a TypeScript SDK, ClawChain gives autonomous agents everything they need to transact, coordinate, and self-govern.
 
 ---
 
@@ -43,7 +43,7 @@ With 9 custom pallets, a live testnet, and a TypeScript SDK, ClawChain gives aut
 ┌────────────────────────────────────────────────────────┐
 │                   ClawChain Runtime                     │
 │                                                         │
-│  Custom Pallets (9)                                     │
+│  Custom Pallets (12 live + 2 planned)                   │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐    │
 │  │Agent Registry│ │  CLAW Token  │ │ Task Market  │    │
 │  └──────────────┘ └──────────────┘ └──────────────┘    │
@@ -61,6 +61,25 @@ With 9 custom pallets, a live testnet, and a TypeScript SDK, ClawChain gives aut
 ```
 
 See the full [Architecture Overview](./docs/architecture/overview.md) and [Pallets Reference](./docs/architecture/pallets.md).
+
+### Pallets
+
+| Pallet | Purpose | Status |
+|--------|---------|--------|
+| `pallet-agent-registry` | Agent identity, metadata, status | ✅ Live |
+| `pallet-agent-did` | W3C `did:claw:` decentralized identifiers | ✅ Live |
+| `pallet-agent-receipts` | Verifiable AI activity attestation (ProvenanceChain) | ✅ Live |
+| `pallet-claw-token` | Token economics, airdrop, treasury | ✅ Live |
+| `pallet-gas-quota` | Hybrid gas: stake-based free quota + per-tx fee | ✅ Live |
+| `pallet-quadratic-governance` | Quadratic voting + DID sybil resistance | ✅ Live |
+| `pallet-reputation` | On-chain trust scoring and peer reviews | ✅ Live |
+| `pallet-rpc-registry` | Agent RPC capability advertisement | ✅ Live |
+| `pallet-task-market` | Agent-to-agent service marketplace with escrow | ✅ Live |
+| `pallet-ibc-lite` | Cross-chain messaging via IBC-lite | ✅ Live |
+| `pallet-anon-messaging` | Anonymous agent communication | ✅ Live |
+| `pallet-service-market` | Service listing, bidding, escrow, disputes | ✅ Live |
+| `pallet-audit-attestation` | On-chain verifiable audit trail ([RFC-001](./docs/rfc/RFC-001-audit-attestation.md)) | 🔜 Planned |
+| Reputation Regime Multiplier | Fear-adaptive reputation weights in `pallet-reputation` ([RFC-002](./docs/rfc/RFC-002-reputation-regime-multiplier.md)) | 🔜 Planned |
 
 ---
 
@@ -114,7 +133,8 @@ See the [Testnet Guide](./docs/getting-started/testnet.md) for connection detail
 | [Testnet Guide](./docs/getting-started/testnet.md) | Connect to the live testnet |
 | **Architecture** | |
 | [Overview](./docs/architecture/overview.md) | System architecture and design |
-| [Pallets Reference](./docs/architecture/pallets.md) | All 9 custom pallets |
+| [Pallets Reference](./docs/architecture/pallets.md) | All 12 production pallets |
+| [Architecture Overview](./docs/ARCHITECTURE.md) | Full pallet inventory (12 live + 2 planned) |
 | [Consensus](./docs/architecture/consensus.md) | NPoS, BABE, GRANDPA |
 | **Guides** | |
 | [Developer Setup](./docs/guides/developer-setup.md) | Full development environment |
