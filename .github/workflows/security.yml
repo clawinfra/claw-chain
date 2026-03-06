@@ -25,8 +25,25 @@ jobs:
         uses: rustsec/audit-check@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          # Ignored advisories — all are Substrate ecosystem hard-locks.
-          # wasmtime 35.x: sc-executor-wasmtime locked, resolves when Substrate upgrades.
-          # keccak 0.1.5: yanked/unsound ARMv8 asm — Substrate dep, patched in >=0.1.6 but not yet pulled.
-          # lru 0.12.5: IterMut stacked-borrows unsound — Substrate dep, patched in >=0.16.3.
-          ignore: "RUSTSEC-2026-0020,RUSTSEC-2026-0006,RUSTSEC-2026-0021,RUSTSEC-2025-0118,RUSTSEC-2025-0009,RUSTSEC-2026-0012,RUSTSEC-2026-0002"
+          # All ignored advisories are Substrate ecosystem transitive deps.
+          # They cannot be upgraded without upstream Substrate changes.
+          #
+          # Vulnerability-class (wasmtime 35.x) — sc-executor-wasmtime hard-locked:
+          #   RUSTSEC-2026-0020, RUSTSEC-2026-0006, RUSTSEC-2026-0021, RUSTSEC-2025-0118
+          #
+          # Unsound (keccak ARMv8 asm) — fixed in Cargo.lock via keccak v0.1.6:
+          #   RUSTSEC-2026-0012 (retained as belt-and-suspenders)
+          #
+          # Unsound (lru IterMut stacked-borrows) — 0.12→0.16 is breaking, blocked upstream:
+          #   RUSTSEC-2026-0002
+          #
+          # Unmaintained crates — all Substrate transitive deps, no action possible:
+          #   RUSTSEC-2025-0010  ring 0.16.20        (libp2p-tls Substrate dep)
+          #   RUSTSEC-2024-0388  derivative 2.2.0    (Substrate macro dep)
+          #   RUSTSEC-2025-0057  fxhash 0.2.1        (Substrate hash dep)
+          #   RUSTSEC-2024-0384  instant 0.1.13      (Substrate time dep)
+          #   RUSTSEC-2022-0061  parity-wasm 0.45.0  (Substrate WASM dep)
+          #   RUSTSEC-2024-0436  paste 1.0.15        (Substrate macro dep)
+          #   RUSTSEC-2024-0370  proc-macro-error 1.0.4 (Substrate macro dep)
+          #   RUSTSEC-2025-0009  libp2p-tls          (sc-network dep)
+          ignore: "RUSTSEC-2026-0020,RUSTSEC-2026-0006,RUSTSEC-2026-0021,RUSTSEC-2025-0118,RUSTSEC-2026-0012,RUSTSEC-2026-0002,RUSTSEC-2025-0010,RUSTSEC-2024-0388,RUSTSEC-2025-0057,RUSTSEC-2024-0384,RUSTSEC-2022-0061,RUSTSEC-2024-0436,RUSTSEC-2024-0370,RUSTSEC-2025-0009"

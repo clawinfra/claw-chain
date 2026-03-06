@@ -1218,7 +1218,6 @@ dependencies = [
  "pallet-election-provider-multi-phase",
  "pallet-gas-quota",
  "pallet-grandpa",
- "pallet-ibc-lite",
  "pallet-offences",
  "pallet-quadratic-governance",
  "pallet-reputation",
@@ -1829,7 +1828,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ab67060fc6b8ef687992d439ca0fa36e7ed17e9a0b16b25b601e8757df720de"
 dependencies = [
  "data-encoding",
- "syn 2.0.114",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -3909,9 +3908,9 @@ dependencies = [
 
 [[package]]
 name = "keccak"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ecc2af9a1119c51f12a14607e783cb977bde58bc069ff0c3da1095e635d70654"
+checksum = "cb26cec98cce3a3d96cbb7bced3c4b16e3d13f27ec56dbd62cbc8f39cfb9d653"
 dependencies = [
  "cpufeatures",
 ]
@@ -5368,23 +5367,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-anon-messaging"
-version = "0.1.0"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "log",
- "pallet-balances",
- "pallet-reputation",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
-]
-
-[[package]]
 name = "pallet-aura"
 version = "44.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5533,23 +5515,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-ibc-lite"
-version = "0.1.0"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "log",
- "pallet-balances",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-offences"
 version = "44.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5607,23 +5572,6 @@ dependencies = [
  "frame-system",
  "log",
  "pallet-balances",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
-]
-
-[[package]]
-name = "pallet-service-market"
-version = "0.1.0"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "log",
- "pallet-balances",
- "pallet-reputation",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
