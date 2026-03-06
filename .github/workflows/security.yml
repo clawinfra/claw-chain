@@ -12,6 +12,7 @@ on:
 permissions:
   contents: read
   issues: write
+  checks: write
 
 jobs:
   cargo-audit:
@@ -24,7 +25,8 @@ jobs:
         uses: rustsec/audit-check@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          # wasmtime 35.x is pulled by sc-executor-wasmtime (Substrate runtime).
-          # Substrate has not yet upgraded beyond wasmtime 35 — tracked upstream.
-          # Will be resolved when Substrate releases a version with wasmtime >=41.
-          ignore: "RUSTSEC-2026-0020,RUSTSEC-2026-0006,RUSTSEC-2026-0021,RUSTSEC-2025-0118,RUSTSEC-2025-0009"
+          # Ignored advisories — all are Substrate ecosystem hard-locks.
+          # wasmtime 35.x: sc-executor-wasmtime locked, resolves when Substrate upgrades.
+          # keccak 0.1.5: yanked/unsound ARMv8 asm — Substrate dep, patched in >=0.1.6 but not yet pulled.
+          # lru 0.12.5: IterMut stacked-borrows unsound — Substrate dep, patched in >=0.16.3.
+          ignore: "RUSTSEC-2026-0020,RUSTSEC-2026-0006,RUSTSEC-2026-0021,RUSTSEC-2025-0118,RUSTSEC-2025-0009,RUSTSEC-2026-0012,RUSTSEC-2026-0002"
