@@ -7,6 +7,10 @@ edition.workspace = true
 repository.workspace = true
 license.workspace = true
 
+
+[package.metadata]
+harness-exempt = "benchmarks-pending"
+
 [dependencies]
 codec = { workspace = true }
 scale-info = { workspace = true }

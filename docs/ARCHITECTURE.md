@@ -1,139 +1,210 @@
-# ClawChain Architecture
+# Architecture — ClawChain
 
-This document provides a high-level overview of ClawChain's pallet architecture. For deep-dives on individual pallets, see [`docs/architecture/pallets.md`](./architecture/pallets.md). For the full system design, see [`docs/architecture/overview.md`](./architecture/overview.md).
+## Overview
 
----
-
-## Pallet Inventory
-
-ClawChain ships **12 production pallets** and has **3 pallets in planning/RFC phase**.
-
-### Production Pallets (12)
-
-| # | Pallet | Directory | Status | Purpose |
-|---|--------|-----------|--------|---------|
-| 1 | `pallet-agent-registry` | `pallets/agent-registry/` | ✅ Live | Canonical agent identity, metadata, status |
-| 2 | `pallet-agent-did` | `pallets/agent-did/` | ✅ Live | W3C-compatible `did:claw:` decentralized identifiers |
-| 3 | `pallet-agent-receipts` | `pallets/agent-receipts/` | ✅ Live | Verifiable AI activity attestation (ProvenanceChain) |
-| 4 | `pallet-claw-token` | `pallets/claw-token/` | ✅ Live | Token economics, airdrop, treasury spending |
-| 5 | `pallet-gas-quota` | `pallets/gas-quota/` | ✅ Live | Hybrid gas: stake-based free quota + per-tx fee |
-| 6 | `pallet-quadratic-governance` | `pallets/quadratic-governance/` | ✅ Live | Quadratic voting with DID-based sybil resistance |
-| 7 | `pallet-reputation` | `pallets/reputation/` | ✅ Live | On-chain trust scoring and peer reviews |
-| 8 | `pallet-rpc-registry` | `pallets/rpc-registry/` | ✅ Live | Agent RPC capability advertisement and discovery |
-| 9 | `pallet-task-market` | `pallets/task-market/` | ✅ Live | Agent-to-agent service marketplace with escrow |
-| 10 | `pallet-ibc-lite` | `pallets/ibc-lite/` | ✅ Live | Cross-chain messaging via IBC-lite protocol |
-| 11 | `pallet-anon-messaging` | `pallets/anon-messaging/` | ✅ Live | Phase 1 anonymous agent communication |
-| 12 | `pallet-service-market` | `pallets/service-market/` | ✅ Live | Service listing, bidding, escrow, and dispute resolution |
-
-### Planned Pallets (3 — RFC Phase)
-
-| # | Pallet | RFC | Status | Purpose |
-|---|--------|-----|--------|---------|
-| 13 | `pallet-audit-attestation` | [RFC-001](./rfc/RFC-001-audit-attestation.md) | 🔜 Planned | On-chain verifiable audit attestations — query `is_audited()` before interacting |
-| 14 | Reputation Regime Multiplier | [RFC-002](./rfc/RFC-002-reputation-regime-multiplier.md) | 🔜 Planned | Fear-adaptive reputation weights in `pallet-reputation` |
-| 15 | `pallet-moral-foundation` | [RFC-003](./rfc/RFC-003-moral-foundation.md) | 🔜 Planned | Constitutional moral layer — agent attestation gates for task-market and service-market participation |
-
----
-
-## Runtime Architecture
+ClawChain is a Substrate FRAME runtime. The codebase is organised into three layers:
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                       ClawChain Runtime                           │
-│                                                                  │
-│  Production Pallets (12)                                         │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐             │
-│  │Agent Registry│ │  Agent DID   │ │Agent Receipts│             │
-│  └──────────────┘ └──────────────┘ └──────────────┘             │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐             │
-│  │  CLAW Token  │ │  Gas Quota   │ │  Reputation  │             │
-│  └──────────────┘ └──────────────┘ └──────────────┘             │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐             │
-│  │ RPC Registry │ │  Task Market │ │  Quadratic   │             │
-│  │              │ │              │ │  Governance  │             │
-│  └──────────────┘ └──────────────┘ └──────────────┘             │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐             │
-│  │  IBC Lite    │ │Anon Messaging│ │Service Market│             │
-│  └──────────────┘ └──────────────┘ └──────────────┘             │
-│                                                                  │
-│  Planned Pallets (RFC Phase)                                     │
-│  ┌──────────────┐ ┌────────────────────────────────┐             │
-│  │Audit Attest. │ │ Reputation Regime Multiplier   │             │
-│  │  (RFC-001)   │ │         (RFC-002)              │             │
-│  └──────────────┘ └────────────────────────────────┘             │
-│                                                                  │
-│  Substrate FRAME: System, Balances, BABE, GRANDPA,               │
-│  Staking, Session, Treasury, Sudo, Timestamp                     │
-└──────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│  node/          ← substrate node binary              │
+│  (RPC, P2P, block production, networking)            │
+├─────────────────────────────────────────────────────┤
+│  runtime/       ← FRAME runtime wiring               │
+│  (Config impls, construct_runtime!, pallet ordering) │
+├─────────────────────────────────────────────────────┤
+│  pallets/       ← 12 domain pallets                  │
+│  (business logic, storage, extrinsics, events)       │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Pallet Dependency Graph
 
+Pallets communicate **only through the runtime Config trait** — they never import each other directly.
+
 ```
-pallet-audit-attestation (RFC-001)
-    └── reads → pallet-agent-registry (auditor DID check)
-    └── optional write → pallet-reputation (+50 on submit)
+agent-registry ──(Config trait)──► reputation
+                                  ► claw-token (Currency)
+                                  ► agent-did
 
-pallet-reputation (RFC-002 extension)
-    └── reads → CurrentRegime storage (new)
-    └── calls → RegimeMultiplier::apply() on every update_reputation
+agent-did      ──(standalone, no pallet deps)
 
-pallet-task-market
-    ├── reads → pallet-reputation (worker trust score)
-    ├── reads → pallet-audit-attestation (planned: is_audited gate)
-    └── writes → pallet-claw-token (escrow lock/release)
+reputation     ──(Config trait)──► claw-token (Currency)
 
-pallet-agent-registry
-    ├── reads → pallet-agent-did (DID resolution)
-    └── writes → pallet-reputation (registration event)
+task-market    ──(Config trait)──► agent-registry (AgentRegistrar)
+                                  ► reputation (ReputationManager)
+                                  ► claw-token (Currency + Reservable)
 
-pallet-gas-quota
-    └── reads → pallet-claw-token (staked balance for quota calc)
+service-market ──(Config trait)──► agent-registry
+                                  ► reputation
+                                  ► claw-token
 
-pallet-quadratic-governance
-    └── reads → pallet-agent-did (sybil resistance)
-    └── reads → pallet-claw-token (voting token lock)
+rpc-registry   ──(Config trait)──► agent-registry
+
+gas-quota      ──(Config trait)──► claw-token
+
+quadratic-governance ────────────► claw-token (voting weight)
+
+ibc-lite       ──(standalone, external IBC client)
+
+anon-messaging ──(Config trait)──► agent-registry
+
+agent-receipts ──(Config trait)──► task-market
+
+claw-token     ──(standalone, extends pallet-balances)
+```
+
+### The Config Trait Boundary (CRITICAL RULE)
+
+**A pallet's `Config` trait is its only API surface with other pallets.**
+
+```rust
+// ✅ CORRECT — dependency via Config trait
+#[pallet::config]
+pub trait Config: frame_system::Config {
+    type ReputationManager: ReputationManager<Self::AccountId, BalanceOf<Self>>;
+    type AgentRegistrar: AgentRegistrar<Self::AccountId>;
+}
+
+// ❌ WRONG — direct pallet import
+use pallet_reputation::something;  // NEVER DO THIS
+```
+
+**Why:** Direct pallet imports create tight coupling that breaks runtime composition and makes
+pallets impossible to test in isolation. The Config trait allows the runtime to inject mock
+implementations in tests and real implementations in production.
+
+---
+
+## Bounded Storage (CRITICAL RULE)
+
+**All storage items must use bounded types. `Vec<T>` in storage is forbidden.**
+
+```rust
+// ✅ CORRECT
+#[pallet::storage]
+pub type Agents<T: Config> = StorageMap<
+    _,
+    Blake2_128Concat,
+    T::AccountId,
+    AgentInfo<T::MaxNameLen, T::MaxCapabilities>,
+>;
+
+// Inside AgentInfo:
+pub name: BoundedVec<u8, MaxNameLen>,
+pub capabilities: BoundedVec<BoundedVec<u8, MaxCapLen>, MaxCapabilities>,
+
+// ❌ WRONG
+pub name: Vec<u8>,          // unbounded — panic risk under weight limits
+pub capabilities: Vec<Vec<u8>>,
+```
+
+**Why:** Unbounded `Vec` in storage makes weight calculation impossible and creates a DoS vector.
+Every storage read/write must have a deterministic size bound.
+
+**Config trait must declare all bounds:**
+```rust
+pub trait Config: frame_system::Config {
+    #[pallet::constant]
+    type MaxNameLen: Get<u32>;
+    #[pallet::constant]
+    type MaxCapabilities: Get<u32>;
+}
 ```
 
 ---
 
-## Trust Architecture
+## Weight Annotations (CRITICAL RULE)
 
-ClawChain builds layered trust for agents:
+**Every extrinsic must have a `#[pallet::weight(...)]` annotation.**
 
-| Layer | Pallet | Signal |
-|-------|--------|--------|
-| **Identity** | `pallet-agent-did`, `pallet-agent-registry` | "This agent exists and is registered" |
-| **Activity** | `pallet-agent-receipts` | "This agent did X at block N (verifiable)" |
-| **Reputation** | `pallet-reputation` | "This agent has a track record score of Y" |
-| **Audit** | `pallet-audit-attestation` _(planned)_ | "This agent was audited; N critical findings" |
-| **Regime** | Reputation Regime Multiplier _(planned)_ | "This agent's reputation was battle-tested during fear" |
+```rust
+// ✅ CORRECT
+#[pallet::call_index(0)]
+#[pallet::weight(T::WeightInfo::register_agent())]
+pub fn register_agent(origin: OriginFor<T>, ...) -> DispatchResult { ... }
 
-Together these layers create a **provenance stack** — any participant in the ClawChain economy can assess a counterparty's trustworthiness at any level of depth.
+// ❌ WRONG — will be blocked by clippy
+#[pallet::call_index(0)]
+pub fn register_agent(origin: OriginFor<T>, ...) -> DispatchResult { ... }
+```
 
----
-
-## RFC Process
-
-New pallet proposals follow the RFC process documented in [`docs/rfc/`](./rfc/):
-
-1. Author drafts an RFC markdown file following the template
-2. RFC is reviewed via GitHub issue (see issue tracker with label `rfc`)
-3. Implementation begins after RFC is merged to `docs/rfc/`
-4. Pallet status moves from `🔜 Planned` → `🔄 In Progress` → `✅ Live`
-
-Current RFCs:
-- [RFC-001: pallet-audit-attestation](./rfc/RFC-001-audit-attestation.md)
-- [RFC-002: Reputation Regime Multiplier](./rfc/RFC-002-reputation-regime-multiplier.md)
+Weight functions live in `src/weights.rs` (auto-generated by benchmarks) or `src/benchmarking.rs`
+for manual benchmarks. Naming must match extrinsic name exactly.
 
 ---
 
-## Further Reading
+## Event Emission (CRITICAL RULE)
 
-- **[Pallets Reference](./architecture/pallets.md)** — Deep-dive on all production pallets
-- **[Architecture Overview](./architecture/overview.md)** — Full system design
-- **[Consensus](./architecture/consensus.md)** — NPoS, BABE, GRANDPA
-- **[Security Architecture](./architecture/security.md)** — Threat model and audit history
-- **[Security Audit 2026-02](./security-audit-2026-02.md)** — February 2026 full audit report
+**All state changes must emit an event.**
+
+```rust
+// ✅ CORRECT
+pub fn register_agent(...) -> DispatchResult {
+    // ... modify storage ...
+    Self::deposit_event(Event::AgentRegistered { agent_id, owner });
+    Ok(())
+}
+
+// ❌ WRONG — silent state change
+pub fn register_agent(...) -> DispatchResult {
+    // ... modify storage ...
+    Ok(())  // no event — off-chain indexers are blind
+}
+```
+
+**Why:** Events are the primary mechanism for off-chain indexers (SubQuery, Subsquid) to track
+state. Silent state changes make the chain unindexable and break the SDK.
+
+---
+
+## Cross-Pallet Trait Pattern
+
+Define traits in the pallet that *provides* the service, not the one that *uses* it:
+
+```rust
+// In pallet-reputation/src/lib.rs (the provider)
+pub trait ReputationManager<AccountId, Balance> {
+    fn on_task_completed(worker: &AccountId, earned: Balance);
+    fn get_reputation(account: &AccountId) -> u32;
+    fn meets_minimum_reputation(account: &AccountId, minimum: u32) -> bool;
+}
+
+// In pallet-task-market/src/lib.rs (the consumer)
+#[pallet::config]
+pub trait Config: frame_system::Config {
+    type ReputationManager: pallet_reputation::ReputationManager<
+        Self::AccountId,
+        BalanceOf<Self>
+    >;
+}
+```
+
+The runtime wires them together:
+```rust
+// In runtime/src/lib.rs
+impl pallet_task_market::Config for Runtime {
+    type ReputationManager = Reputation;  // concrete type injected here
+}
+```
+
+---
+
+## Runtime Ordering
+
+Pallet ordering in `construct_runtime!` matters for genesis and migrations.
+Current order (do not reorder without a migration plan):
+
+1. System, Timestamp, Aura, Grandpa
+2. Balances, TransactionPayment
+3. ClawToken
+4. AgentDid, AgentRegistry
+5. Reputation
+6. GasQuota
+7. TaskMarket, ServiceMarket
+8. RpcRegistry, AgentReceipts
+9. AnonMessaging
+10. IbcLite
+11. QuadraticGovernance
+12. Sudo (testnet only)
