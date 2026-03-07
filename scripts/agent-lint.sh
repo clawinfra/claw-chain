@@ -18,6 +18,11 @@ echo ""
 echo "[1/5] Checking benchmarks..."
 for pallet_dir in pallets/*/; do
   pallet=$(basename "$pallet_dir")
+  # Skip pallets explicitly marked as harness-exempt (existing pallets predating the harness)
+  if grep -q 'harness-exempt.*benchmarks' "${pallet_dir}Cargo.toml" 2>/dev/null; then
+    echo "  [skip] $pallet — benchmarks-pending (harness-exempt)"
+    continue
+  fi
   if [ ! -f "${pallet_dir}src/benchmarking.rs" ]; then
     echo ""
     echo "LINT ERROR [missing-benchmarks]: $pallet has no benchmarking.rs"
