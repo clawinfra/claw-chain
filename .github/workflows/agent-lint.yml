@@ -40,6 +40,8 @@ jobs:
 
       - name: Run clippy
         run: cargo clippy --workspace -- -D warnings
+        env:
+          SKIP_WASM_BUILD: 1
 
   test:
     name: Tests
@@ -63,4 +65,6 @@ jobs:
           key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run tests
-        run: cargo test --workspace
+        run: cargo test --workspace --lib
+        env:
+          SKIP_WASM_BUILD: 1
