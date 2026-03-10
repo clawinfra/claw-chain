@@ -1,0 +1,55 @@
+# ClawChain Testnet Faucet — Docker Compose
+#
+# Joins the clawchain-internal network so it can talk to the validator node.
+# Start alongside the validator:
+#   docker compose -f deploy/docker-compose.validator.yml \
+#     -f faucet/docker-compose.yml up -d
+
+name: clawchain-faucet
+
+services:
+  faucet:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: clawchain-faucet:${FAUCET_VERSION:-latest}
+    container_name: clawchain-faucet
+    restart: unless-stopped
+
+    environment:
+      PORT: ${FAUCET_PORT:-3001}
+      RPC_URL: ${RPC_URL:-ws://clawchain-validator:9944}
+      FAUCET_SEED: ${FAUCET_SEED:?FAUCET_SEED must be set}
+      DRIP_AMOUNT_CLAW: ${DRIP_AMOUNT_CLAW:-1000}
+      COOLDOWN_HOURS: ${COOLDOWN_HOURS:-24}
+      IP_RATE_LIMIT: ${IP_RATE_LIMIT:-10}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_PRETTY: "false"
+
+    ports:
+      - "127.0.0.1:${FAUCET_PORT:-3001}:3001"
+
+    networks:
+      - clawchain-internal
+
+    depends_on:
+      - validator
+
+    healthcheck:
+      test: ["CMD", "node", "-e",
+        "require('http').get('http://localhost:3001/status', r => process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+networks:
+  clawchain-internal:
+    external: true
+    name: clawchain-internal
