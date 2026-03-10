@@ -27,7 +27,7 @@
 # ============================================================
 # Stage 1: Builder
 # ============================================================
-FROM docker.io/rust:1.82-bookworm AS builder
+FROM docker.io/rust:stable AS builder
 
 # Install native build dependencies
 RUN apt-get update && \

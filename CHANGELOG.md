@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Validator onboarding: Docker one-liner (`docker compose up -d`), testnet faucet (1000 CLAW/24h at faucet.clawchain.win), `docs/VALIDATOR.md` quick-start (<30min to producing blocks), `docs/VALIDATOR_INCENTIVES.md` (airdrop tiers, APY model, slashing table)
 - **RFC-001: `pallet-audit-attestation`** — On-chain verifiable audit trail for agents and pallets.
   Introduces `submit_attestation`, `revoke_attestation` extrinsics and `is_audited(target, max_age_blocks)` RPC.
   Auditors must be registered agent DIDs. First attestation will reference `docs/security-audit-2026-02.md`.
