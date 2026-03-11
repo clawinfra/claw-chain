@@ -42,7 +42,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Add wasm target (required for Substrate runtime compilation)
-RUN rustup target add wasm32-unknown-unknown
+RUN rustup target add wasm32-unknown-unknown && \
+    rustup component add rust-src
 
 WORKDIR /build
 
