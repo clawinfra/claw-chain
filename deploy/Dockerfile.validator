@@ -27,7 +27,7 @@
 # ============================================================
 # Stage 1: Builder
 # ============================================================
-FROM rust:1.86-bookworm AS builder
+FROM rust:1.88-bookworm AS builder
 
 # Install native build dependencies
 RUN apt-get update && \
