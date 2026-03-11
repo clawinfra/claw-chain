@@ -124,8 +124,3 @@ futures = { version = "0.3" }
 
 [profile.release]
 panic = "unwind"
-
-# Security patches
-[patch.crates-io]
-# RUSTSEC-2026-0037: quinn-proto DoS vulnerability - upgrade to 0.11.14+
-quinn-proto = "0.11.14"
