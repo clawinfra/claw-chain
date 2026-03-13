@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- `pallet-emergency-pause`: M-of-N council governance for emergency halts with auto-expiry via `on_initialize`. Exposes `EmergencyPauseProvider` trait for all pallets to hook into. 39 tests.
 - **RFC-001: `pallet-audit-attestation`** — On-chain verifiable audit trail for agents and pallets.
   Introduces `submit_attestation`, `revoke_attestation` extrinsics and `is_audited(target, max_age_blocks)` RPC.
   Auditors must be registered agent DIDs. First attestation will reference `docs/security-audit-2026-02.md`.

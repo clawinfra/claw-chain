@@ -625,6 +625,43 @@ impl pallet_ibc_lite::Config for Runtime {
     type AgentRegistry = IbcAgentRegistry;
 }
 
+// =========================================================
+// Emergency Pause Configuration (ADR-007)
+// =========================================================
+
+parameter_types! {
+    /// Votes required to pause a pallet (M-of-N).
+    pub const EmergencyPauseThreshold: u32 = 3;
+    /// Votes required to unpause a pallet.
+    pub const EmergencyUnpauseThreshold: u32 = 3;
+    /// Maximum council size.
+    pub const EmergencyMaxCouncilSize: u32 = 9;
+    /// Maximum byte length of a pallet identifier.
+    pub const EmergencyMaxPalletIdLen: u32 = 64;
+    /// Maximum number of simultaneously paused pallets.
+    pub const EmergencyMaxPausedPallets: u32 = 32;
+    /// Maximum number of simultaneously active proposals.
+    pub const EmergencyMaxActiveProposals: u32 = 16;
+    /// Blocks before an unexecuted proposal expires (~24 h at 6 s/block).
+    pub const EmergencyProposalExpiry: BlockNumber = 14_400;
+    /// Duration of an emergency pause in blocks (~2 h at 6 s/block).
+    pub const EmergencyPauseDuration: BlockNumber = 1_200;
+}
+
+/// Configure the Emergency Pause pallet.
+impl pallet_emergency_pause::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+    type PauseThreshold = EmergencyPauseThreshold;
+    type UnpauseThreshold = EmergencyUnpauseThreshold;
+    type MaxCouncilSize = EmergencyMaxCouncilSize;
+    type MaxPalletIdLen = EmergencyMaxPalletIdLen;
+    type MaxPausedPallets = EmergencyMaxPausedPallets;
+    type MaxActiveProposals = EmergencyMaxActiveProposals;
+    type ProposalExpiry = EmergencyProposalExpiry;
+    type EmergencyPauseDuration = EmergencyPauseDuration;
+}
+
 frame_support::construct_runtime!(
     pub enum Runtime {
         System: frame_system,
@@ -655,6 +692,7 @@ frame_support::construct_runtime!(
         QuadraticGovernance: pallet_quadratic_governance,
         AgentReceipts: pallet_agent_receipts,
         IbcLite: pallet_ibc_lite,
+        EmergencyPause: pallet_emergency_pause,
     }
 );
 
