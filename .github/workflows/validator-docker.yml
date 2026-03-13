@@ -49,7 +49,7 @@ jobs:
             -e CHAIN_SPEC=dev \
             -e NODE_NAME=CI-Validator \
             -e RUST_LOG=info \
-            -e AUTO_KEY_GEN=false \
+            -e AUTO_KEY_GEN=true \
             clawchain-validator:ci
 
           # Wait for node to start (up to 120s)
@@ -153,3 +153,4 @@ jobs:
         if: always()
         run: |
           docker rm -f ci-validator 2>/dev/null || true
+
