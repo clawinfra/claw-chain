@@ -3,9 +3,10 @@
 #
 # Handles:
 #   1. Chain spec validation
-#   2. Automatic session key generation (if AUTO_KEY_GEN=true and keystore empty)
-#   3. Bootnode construction from BOOTNODES or TESTNET_BOOTNODE
-#   4. exec into clawchain-node (tini stays as PID 1)
+#   2. Network key generation (libp2p peer identity)
+#   3. Automatic session key generation (if AUTO_KEY_GEN=true and keystore empty)
+#   4. Bootnode construction from BOOTNODES or TESTNET_BOOTNODE
+#   5. exec into clawchain-node (tini stays as PID 1)
 #
 # Environment variables (all have defaults via Dockerfile ENV):
 #   NODE_NAME        Human-readable node name                  [ClawChain-Validator]
@@ -67,7 +68,50 @@ case "${CHAIN_SPEC}" in
     ;;
 esac
 
-# ── Step 2: Auto key generation ──────────────────────────────────────────────
+# ── Step 2: Generate network key (libp2p peer identity) if missing ─────────
+# The network key is stored at: <BASE_PATH>/chains/<chain_name>/network/secret_ed25519
+# Without it, the node will fail to start with NetworkKeyNotFound error.
+# Derive chain-specific directory name from CHAIN_SPEC (dev -> clawchain_dev, local -> clawchain_local)
+CHAIN_DIR_NAME=""
+if [ "${CHAIN_SPEC}" = "dev" ]; then
+  CHAIN_DIR_NAME="clawchain_dev"
+elif [ "${CHAIN_SPEC}" = "local" ]; then
+  CHAIN_DIR_NAME="clawchain_local"
+elif [ "${CHAIN_SPEC}" = "testnet" ]; then
+  CHAIN_DIR_NAME="clawchain_testnet"
+else
+  # For custom chain specs, use the basename without extension
+  CHAIN_DIR_NAME=$(basename "${CHAIN_SPEC}" .json)
+fi
+
+NETWORK_KEY_PATH="${BASE_PATH}/chains/${CHAIN_DIR_NAME}/network/secret_ed25519"
+
+if [ ! -f "${NETWORK_KEY_PATH}" ]; then
+  info "Network key not found at ${NETWORK_KEY_PATH} — generating new libp2p peer identity..."
+
+  # Create network directory
+  NETWORK_DIR="${BASE_PATH}/chains/${CHAIN_DIR_NAME}/network"
+  mkdir -p "${NETWORK_DIR}"
+
+  # Generate a new ed25519 keypair for libp2p
+  # We'll use openssl to generate the seed, then encode it properly
+  # The key format is: 32 bytes of seed data
+  if command -v openssl >/dev/null 2>&1; then
+    # Generate 32 random bytes
+    openssl rand -out "${NETWORK_KEY_PATH}" 32
+    chmod 600 "${NETWORK_KEY_PATH}"
+    info "Generated new network key at ${NETWORK_KEY_PATH}"
+  else
+    # Fallback: use /dev/urandom
+    dd if=/dev/urandom of="${NETWORK_KEY_PATH}" bs=32 count=1 2>/dev/null
+    chmod 600 "${NETWORK_KEY_PATH}"
+    info "Generated new network key at ${NETWORK_KEY_PATH}"
+  fi
+else
+  info "Network key exists at ${NETWORK_KEY_PATH}"
+fi
+
+# ── Step 3: Auto session key generation ─────────────────────────────────────
 if [ "${AUTO_KEY_GEN}" = "true" ]; then
   # Determine keystore path — Substrate stores keys under:
   # <BASE_PATH>/chains/<chain_name>/keystore/
@@ -139,7 +183,7 @@ if [ "${AUTO_KEY_GEN}" = "true" ]; then
   fi
 fi
 
-# ── Step 3: Build bootnode arguments ─────────────────────────────────────────
+# ── Step 4: Build bootnode arguments ─────────────────────────────────────────
 BOOTNODE_ARGS=""
 
 if [ -n "${BOOTNODES}" ]; then
@@ -161,7 +205,7 @@ elif [ -n "${TESTNET_BOOTNODE}" ] && [ "${CHAIN_SPEC}" != "dev" ]; then
   info "Using TESTNET_BOOTNODE: ${TESTNET_BOOTNODE}"
 fi
 
-# ── Step 4: Exec into clawchain-node ─────────────────────────────────────────
+# ── Step 5: Exec into clawchain-node ─────────────────────────────────────────
 # Use exec so tini (PID 1) receives signals from clawchain-node directly.
 # shellcheck disable=SC2086
 info "Launching clawchain-node..."
