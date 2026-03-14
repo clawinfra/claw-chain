@@ -1,0 +1,156 @@
+name: Validator Docker CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'deploy/**'
+      - 'node/**'
+      - 'runtime/**'
+      - 'pallets/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/validator-docker.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'deploy/**'
+      - 'node/**'
+      - 'runtime/**'
+      - 'pallets/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build validator Docker image
+        run: |
+          docker build \
+            -f deploy/Dockerfile.validator \
+            -t clawchain-validator:ci \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            .
+
+      - name: Start validator (dev chain)
+        run: |
+          docker run -d \
+            --name ci-validator \
+            -p 9944:9944 \
+            -p 30333:30333 \
+            -p 9615:9615 \
+            -e CHAIN_SPEC=dev \
+            -e NODE_NAME=CI-Validator \
+            -e RUST_LOG=info \
+            -e AUTO_KEY_GEN=true \
+            clawchain-validator:ci
+
+          # Wait for node to start (up to 120s)
+          for i in $(seq 1 24); do
+            if curl -sf http://localhost:9944/health >/dev/null 2>&1; then
+              echo "✅ Node healthy after $((i*5))s"
+              break
+            fi
+            if [ "$i" -eq 24 ]; then
+              echo "❌ Node failed to start in 120s"
+              docker logs ci-validator
+              exit 1
+            fi
+            sleep 5
+          done
+
+      - name: Verify node is producing blocks
+        run: |
+          # Get current block (hex)
+          BLOCK=$(curl -sf -H "Content-Type: application/json" \
+            --data '{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}' \
+            http://localhost:9944 | jq -r '.result.number')
+          echo "Current block: $BLOCK"
+
+          # Wait 15s and check block increased
+          sleep 15
+
+          BLOCK2=$(curl -sf -H "Content-Type: application/json" \
+            --data '{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}' \
+            http://localhost:9944 | jq -r '.result.number')
+          echo "Block after 15s: $BLOCK2"
+
+          # Convert hex to decimal and compare
+          B1=$(printf "%d" "$BLOCK")
+          B2=$(printf "%d" "$BLOCK2")
+          if [ "$B2" -gt "$B1" ]; then
+            echo "✅ Block production confirmed: $B1 → $B2"
+          else
+            echo "❌ No block production detected"
+            docker logs ci-validator --tail 50
+            exit 1
+          fi
+
+      - name: Verify RPC endpoints respond
+        run: |
+          # system_health
+          curl -sf -H "Content-Type: application/json" \
+            --data '{"id":1,"jsonrpc":"2.0","method":"system_health","params":[]}' \
+            http://localhost:9944 | jq .
+
+          # system_chain
+          curl -sf -H "Content-Type: application/json" \
+            --data '{"id":1,"jsonrpc":"2.0","method":"system_chain","params":[]}' \
+            http://localhost:9944 | jq .
+
+          # system_nodeRoles (should include Authority)
+          ROLES=$(curl -sf -H "Content-Type: application/json" \
+            --data '{"id":1,"jsonrpc":"2.0","method":"system_nodeRoles","params":[]}' \
+            http://localhost:9944)
+          echo "Node roles: $ROLES"
+          echo "$ROLES" | grep -q "Authority" || \
+            (echo "❌ Node not in Authority role" && exit 1)
+          echo "✅ Node is an Authority"
+
+      - name: Verify Prometheus metrics
+        run: |
+          curl -sf http://localhost:9615/metrics | head -20
+          curl -sf http://localhost:9615/metrics | grep -q "substrate_block_height" || \
+            (echo "❌ Prometheus metrics missing substrate_block_height" && exit 1)
+          echo "✅ Prometheus metrics available"
+
+      - name: Verify health check endpoint
+        run: |
+          curl -sf http://localhost:9944/health | jq .
+          echo "✅ Health check passes"
+
+      - name: Verify non-root user in container
+        run: |
+          CONTAINER_USER=$(docker exec ci-validator whoami)
+          echo "Container user: $CONTAINER_USER"
+          if [ "$CONTAINER_USER" = "root" ]; then
+            echo "❌ Container running as root!"
+            exit 1
+          fi
+          echo "✅ Container running as non-root ($CONTAINER_USER)"
+
+      - name: Verify graceful shutdown
+        run: |
+          # Send SIGTERM and verify clean exit
+          docker stop --time 30 ci-validator
+          EXIT_CODE=$(docker inspect ci-validator --format='{{.State.ExitCode}}')
+          echo "Exit code: $EXIT_CODE"
+          if [ "$EXIT_CODE" -ne 0 ] && [ "$EXIT_CODE" -ne 143 ]; then
+            echo "⚠️ Non-clean exit code: $EXIT_CODE (expected 0 or 143/SIGTERM)"
+            docker logs ci-validator --tail 20
+          else
+            echo "✅ Graceful shutdown (exit code: $EXIT_CODE)"
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f ci-validator 2>/dev/null || true
+

@@ -44,7 +44,7 @@ Set environment variables:
 
 | Variable | Required | Description |
 |---|---|---|
-| `CLAWCHAIN_RPC_URL` | ✅ | WebSocket RPC endpoint, e.g. `ws://localhost:9944` or `wss://rpc.clawchain.io` |
+| `CLAWCHAIN_RPC_URL` | ✅ | WebSocket RPC endpoint, e.g. `ws://localhost:9944` or `wss://rpc.clawchain.win` |
 | `CLAWCHAIN_KEYPAIR_PATH` | ✅ | Path to keypair file (plain mnemonic string, or JSON with `mnemonic`/`seed`/`secretPhrase` field) |
 | `CLAWCHAIN_CONNECT_TIMEOUT_MS` | ❌ | RPC connection timeout in ms (default: `30000`) |
 

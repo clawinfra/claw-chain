@@ -126,7 +126,3 @@ futures = { version = "0.3" }
 
 [profile.release]
 panic = "unwind"
-
-# Security: libp2p-tls 0.6.2+ uses ring >=0.17.12 (fixes RUSTSEC-2025-0009)
-# The Substrate sc-network 0.55.1 dependency already pulls in libp2p-tls 0.6.2+
-# No patch needed - crates.io version is sufficient

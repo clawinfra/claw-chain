@@ -27,7 +27,7 @@
 # ============================================================
 # Stage 1: Builder
 # ============================================================
-FROM docker.io/rust:1.82-bookworm AS builder
+FROM rust:1.88-bookworm AS builder
 
 # Install native build dependencies
 RUN apt-get update && \
@@ -42,7 +42,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Add wasm target (required for Substrate runtime compilation)
-RUN rustup target add wasm32-unknown-unknown
+RUN rustup target add wasm32-unknown-unknown && \
+    rustup component add rust-src
 
 WORKDIR /build
 
