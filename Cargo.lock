@@ -1216,8 +1216,10 @@ dependencies = [
  "pallet-balances",
  "pallet-claw-token",
  "pallet-election-provider-multi-phase",
+ "pallet-emergency-pause",
  "pallet-gas-quota",
  "pallet-grandpa",
+ "pallet-ibc-lite",
  "pallet-offences",
  "pallet-quadratic-governance",
  "pallet-reputation",
@@ -5367,6 +5369,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-anon-messaging"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "pallet-reputation",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+]
+
+[[package]]
 name = "pallet-aura"
 version = "44.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5475,6 +5494,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-emergency-pause"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+]
+
+[[package]]
 name = "pallet-gas-quota"
 version = "0.1.0"
 dependencies = [
@@ -5512,6 +5547,23 @@ dependencies = [
  "sp-runtime",
  "sp-session",
  "sp-staking",
+]
+
+[[package]]
+name = "pallet-ibc-lite"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -5572,6 +5624,23 @@ dependencies = [
  "frame-system",
  "log",
  "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+]
+
+[[package]]
+name = "pallet-service-market"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "pallet-reputation",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
