@@ -73,6 +73,7 @@ pallet-quadratic-governance = { workspace = true }
 pallet-agent-receipts = { workspace = true }
 pallet-ibc-lite = { workspace = true }
 pallet-emergency-pause = { workspace = true }
+pallet-reputation-regime = { workspace = true }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true, optional = true }
@@ -132,6 +133,7 @@ std = [
     "pallet-agent-receipts/std",
     "pallet-ibc-lite/std",
     "pallet-emergency-pause/std",
+    "pallet-reputation-regime/std",
     "substrate-wasm-builder",
 ]
 runtime-benchmarks = [
@@ -154,6 +156,7 @@ runtime-benchmarks = [
     "pallet-quadratic-governance/runtime-benchmarks",
     "pallet-ibc-lite/runtime-benchmarks",
     "pallet-emergency-pause/runtime-benchmarks",
+    "pallet-reputation-regime/runtime-benchmarks",
     "sp-runtime/runtime-benchmarks",
 ]
 try-runtime = [
@@ -185,4 +188,5 @@ try-runtime = [
     "pallet-agent-receipts/try-runtime",
     "pallet-ibc-lite/try-runtime",
     "pallet-emergency-pause/try-runtime",
+    "pallet-reputation-regime/try-runtime",
 ]

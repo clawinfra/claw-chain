@@ -649,6 +649,37 @@ parameter_types! {
 }
 
 /// Configure the Emergency Pause pallet.
+// =========================================================
+// Reputation Regime Configuration (Issue #60)
+// =========================================================
+
+parameter_types! {
+    /// F&G values strictly below this are in the Fear regime.
+    pub const FearThreshold: u8 = 25;
+    /// F&G values strictly above this are in the Greed regime.
+    pub const GreedThreshold: u8 = 75;
+    /// Fear regime multiplier in basis points: 2x.
+    pub const FearMultiplierBps: u32 = 200;
+    /// Neutral regime multiplier in basis points: 1x.
+    pub const NeutralMultiplierBps: u32 = 100;
+    /// Greed regime multiplier in basis points: 0.5x.
+    pub const GreedMultiplierBps: u32 = 50;
+    /// Maximum number of regime change history entries to retain.
+    pub const MaxRegimeHistory: u32 = 100;
+}
+
+impl pallet_reputation_regime::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+    type OracleOrigin = frame_system::EnsureRoot<AccountId>;
+    type FearThreshold = FearThreshold;
+    type GreedThreshold = GreedThreshold;
+    type FearMultiplierBps = FearMultiplierBps;
+    type NeutralMultiplierBps = NeutralMultiplierBps;
+    type GreedMultiplierBps = GreedMultiplierBps;
+    type MaxRegimeHistory = MaxRegimeHistory;
+}
+
 impl pallet_emergency_pause::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
@@ -693,6 +724,7 @@ frame_support::construct_runtime!(
         AgentReceipts: pallet_agent_receipts,
         IbcLite: pallet_ibc_lite,
         EmergencyPause: pallet_emergency_pause,
+        ReputationRegime: pallet_reputation_regime,
     }
 );
 
