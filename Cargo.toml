@@ -13,6 +13,7 @@ members = [
     "pallets/ibc-lite",
     "pallets/anon-messaging",
     "pallets/emergency-pause",
+    "pallets/reputation-regime",
 ]
 resolver = "2"
 
@@ -113,6 +114,7 @@ pallet-service-market = { path = "pallets/service-market", default-features = fa
 pallet-ibc-lite = { path = "pallets/ibc-lite", default-features = false }
 pallet-anon-messaging = { path = "pallets/anon-messaging", default-features = false }
 pallet-emergency-pause = { path = "pallets/emergency-pause", default-features = false }
+pallet-reputation-regime = { path = "pallets/reputation-regime", default-features = false }
 
 # Serde
 serde = { version = "1.0", features = ["derive"] }

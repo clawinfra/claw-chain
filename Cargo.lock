@@ -1223,6 +1223,7 @@ dependencies = [
  "pallet-offences",
  "pallet-quadratic-governance",
  "pallet-reputation",
+ "pallet-reputation-regime",
  "pallet-rpc-registry",
  "pallet-session",
  "pallet-staking",
@@ -5608,6 +5609,21 @@ dependencies = [
  "frame-system",
  "log",
  "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+]
+
+[[package]]
+name = "pallet-reputation-regime"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
