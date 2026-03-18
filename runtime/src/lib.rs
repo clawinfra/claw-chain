@@ -648,7 +648,6 @@ parameter_types! {
     pub const EmergencyPauseDuration: BlockNumber = 1_200;
 }
 
-/// Configure the Emergency Pause pallet.
 // =========================================================
 // Reputation Regime Configuration (Issue #60)
 // =========================================================

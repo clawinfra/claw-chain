@@ -38,9 +38,7 @@ pub enum Regime {
 /// Different action types can theoretically have different multiplier
 /// profiles per regime, but in v1 all actions share the same multiplier.
 /// This enum exists for forward compatibility.
-#[derive(
-    Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen,
-)]
+#[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum ActionType {
     /// Agent completed an assigned task successfully.
     TaskCompletion,

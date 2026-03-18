@@ -275,10 +275,7 @@ pub mod pallet {
         /// - [`Error::ValueOutOfRange`] — if `fear_greed_value > 100`.
         #[pallet::call_index(0)]
         #[pallet::weight(<T as Config>::WeightInfo::update_regime())]
-        pub fn update_regime(
-            origin: OriginFor<T>,
-            fear_greed_value: u8,
-        ) -> DispatchResult {
+        pub fn update_regime(origin: OriginFor<T>, fear_greed_value: u8) -> DispatchResult {
             // 1. Verify origin and extract account for event logging.
             let updater = Self::ensure_oracle_origin(origin)?;
 
@@ -378,7 +375,9 @@ pub mod pallet {
         ///
         /// If `OracleOrigin` is `EnsureRoot`, non-root signed calls will be
         /// rejected by `T::OracleOrigin::ensure_origin()`.
-        fn ensure_oracle_origin(origin: OriginFor<T>) -> Result<Option<T::AccountId>, DispatchError> {
+        fn ensure_oracle_origin(
+            origin: OriginFor<T>,
+        ) -> Result<Option<T::AccountId>, DispatchError> {
             // Try to extract a signed account for event logging (may fail for root).
             let maybe_who = frame_system::ensure_signed(origin.clone()).ok();
 
