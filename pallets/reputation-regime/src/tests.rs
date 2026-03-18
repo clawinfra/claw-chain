@@ -339,7 +339,10 @@ fn update_regime_emits_fear_greed_updated_event() {
                 })
             )
         });
-        assert!(has_event, "Expected FearGreedUpdated event (no regime change)");
+        assert!(
+            has_event,
+            "Expected FearGreedUpdated event (no regime change)"
+        );
     });
 }
 
@@ -495,7 +498,10 @@ fn no_transition_same_regime() {
                 })
             )
         });
-        assert!(has_fear_greed_updated, "Expected FearGreedUpdated not RegimeUpdated");
+        assert!(
+            has_fear_greed_updated,
+            "Expected FearGreedUpdated not RegimeUpdated"
+        );
 
         // Must NOT have a RegimeUpdated event.
         let has_regime_updated = events.iter().any(|e| {
@@ -504,7 +510,10 @@ fn no_transition_same_regime() {
                 RuntimeEvent::ReputationRegime(Event::RegimeUpdated { .. })
             )
         });
-        assert!(!has_regime_updated, "Must not emit RegimeUpdated when regime is unchanged");
+        assert!(
+            !has_regime_updated,
+            "Must not emit RegimeUpdated when regime is unchanged"
+        );
     });
 }
 
@@ -589,11 +598,18 @@ fn history_fifo_at_capacity() {
         }
 
         let history = ReputationRegime::regime_history();
-        assert_eq!(history.len(), 10, "History should be capped at MaxRegimeHistory=10");
+        assert_eq!(
+            history.len(),
+            10,
+            "History should be capped at MaxRegimeHistory=10"
+        );
 
         // The first entry pushed (block 1, value=10) should be evicted.
         // The oldest remaining entry should be block 2.
-        assert_eq!(history[0].changed_at, 2, "Oldest entry should have been evicted (FIFO)");
+        assert_eq!(
+            history[0].changed_at, 2,
+            "Oldest entry should have been evicted (FIFO)"
+        );
         // The newest entry is at block 11.
         assert_eq!(history[9].changed_at, 11);
     });
@@ -791,6 +807,9 @@ fn multiple_regime_transitions_emit_correct_events() {
             })
             .count();
 
-        assert_eq!(regime_updated_count, 2, "Expected exactly 2 RegimeUpdated events");
+        assert_eq!(
+            regime_updated_count, 2,
+            "Expected exactly 2 RegimeUpdated events"
+        );
     });
 }
