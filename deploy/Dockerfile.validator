@@ -52,20 +52,21 @@ WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
 COPY node/Cargo.toml           node/Cargo.toml
 COPY runtime/Cargo.toml        runtime/Cargo.toml
-COPY pallets/agent-registry/Cargo.toml   pallets/agent-registry/Cargo.toml
-COPY pallets/claw-token/Cargo.toml       pallets/claw-token/Cargo.toml
-COPY pallets/reputation/Cargo.toml       pallets/reputation/Cargo.toml
-COPY pallets/task-market/Cargo.toml      pallets/task-market/Cargo.toml
+COPY pallets/agent-registry/Cargo.toml        pallets/agent-registry/Cargo.toml
+COPY pallets/claw-token/Cargo.toml            pallets/claw-token/Cargo.toml
+COPY pallets/reputation/Cargo.toml            pallets/reputation/Cargo.toml
+COPY pallets/reputation-regime/Cargo.toml     pallets/reputation-regime/Cargo.toml
+COPY pallets/task-market/Cargo.toml           pallets/task-market/Cargo.toml
 
 # Create stub lib/main files so `cargo build` can resolve dependencies
 RUN mkdir -p node/src runtime/src \
         pallets/agent-registry/src pallets/claw-token/src \
-        pallets/reputation/src pallets/task-market/src && \
+        pallets/reputation/src pallets/reputation-regime/src pallets/task-market/src && \
     echo 'fn main() {}' > node/src/main.rs && \
     touch node/src/chain_spec.rs node/src/cli.rs node/src/command.rs \
           node/src/rpc.rs node/src/service.rs node/build.rs && \
     echo '#![no_std] pub fn noop() {}' > runtime/src/lib.rs && \
-    for p in agent-registry claw-token reputation task-market; do \
+    for p in agent-registry claw-token reputation reputation-regime task-market; do \
         echo '#![no_std] pub fn noop() {}' > pallets/$p/src/lib.rs; \
     done
 
@@ -156,27 +157,10 @@ ENV NODE_NAME="ClawChain-Validator" \
 # Entrypoint — tini as PID 1 for proper signal handling
 # ============================================================
 COPY --chown=root:root deploy/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-# Fallback: if entrypoint script is not present, use inline CMD below.
-# The ENTRYPOINT will be overridden by docker-compose if needed.
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-ENTRYPOINT ["/usr/bin/tini", "--"]
+# tini as PID 1 for proper signal handling; entrypoint script handles
+# network key generation before exec-ing clawchain-node.
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/docker-entrypoint.sh"]
 
-# Default command — uses ENV vars, can be overridden in docker-compose
-CMD ["/bin/sh", "-c", \
-    "exec clawchain-node \
-     --validator \
-     --base-path ${BASE_PATH} \
-     --chain ${CHAIN_SPEC} \
-     --name ${NODE_NAME} \
-     --port ${P2P_PORT} \
-     --rpc-port ${RPC_PORT} \
-     --rpc-external \
-     --rpc-cors all \
-     --rpc-methods safe \
-     --prometheus-external \
-     --prometheus-port ${METRICS_PORT} \
-     --state-pruning 256 \
-     --blocks-pruning archive-canonical \
-     --database paritydb \
-     --log ${RUST_LOG} \
-     ${EXTRA_ARGS}"]
+# No CMD needed — docker-entrypoint.sh calls exec clawchain-node directly.
