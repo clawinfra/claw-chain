@@ -93,19 +93,25 @@ if [ ! -f "${NETWORK_KEY_PATH}" ]; then
   NETWORK_DIR="${BASE_PATH}/chains/${CHAIN_DIR_NAME}/network"
   mkdir -p "${NETWORK_DIR}"
 
-  # Generate a new ed25519 keypair for libp2p
-  # We'll use openssl to generate the seed, then encode it properly
-  # The key format is: 32 bytes of seed data
-  if command -v openssl >/dev/null 2>&1; then
-    # Generate 32 random bytes
-    openssl rand -out "${NETWORK_KEY_PATH}" 32
+  # Use the node binary to generate a properly-formatted ed25519 network key.
+  # 'key generate-node-key' writes the secret key to --file and prints the peer ID to stdout.
+  # This is the only reliable way to produce a key Substrate accepts — raw openssl/urandom
+  # bytes do NOT match Substrate's expected key format and cause NetworkKeyNotFound errors.
+  if clawchain-node key generate-node-key --file "${NETWORK_KEY_PATH}" >/dev/null 2>&1; then
     chmod 600 "${NETWORK_KEY_PATH}"
     info "Generated new network key at ${NETWORK_KEY_PATH}"
   else
-    # Fallback: use /dev/urandom
-    dd if=/dev/urandom of="${NETWORK_KEY_PATH}" bs=32 count=1 2>/dev/null
-    chmod 600 "${NETWORK_KEY_PATH}"
-    info "Generated new network key at ${NETWORK_KEY_PATH}"
+    # Fallback for older node builds that don't support 'key generate-node-key --file'
+    # Try writing to stdout and capturing
+    PEER_ID=$(clawchain-node key generate-node-key 2>"${NETWORK_KEY_PATH}" || true)
+    if [ -s "${NETWORK_KEY_PATH}" ]; then
+      chmod 600 "${NETWORK_KEY_PATH}"
+      info "Generated new network key at ${NETWORK_KEY_PATH} (peer ID: ${PEER_ID})"
+    else
+      error "Failed to generate network key — clawchain-node key generate-node-key not supported"
+      error "Try passing --node-key via EXTRA_ARGS or mounting a pre-generated key"
+      exit 1
+    fi
   fi
 else
   info "Network key exists at ${NETWORK_KEY_PATH}"

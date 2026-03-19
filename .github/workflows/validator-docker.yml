@@ -50,6 +50,7 @@ jobs:
             -e NODE_NAME=CI-Validator \
             -e RUST_LOG=info \
             -e AUTO_KEY_GEN=true \
+            -e EXTRA_ARGS="--alice --force-authoring" \
             clawchain-validator:ci
 
           # Wait for node to start (up to 120s)
