@@ -157,7 +157,6 @@ ENV NODE_NAME="ClawChain-Validator" \
 # Entrypoint — tini as PID 1 for proper signal handling
 # ============================================================
 COPY --chown=root:root deploy/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # tini as PID 1 for proper signal handling; entrypoint script handles
 # network key generation before exec-ing clawchain-node.
