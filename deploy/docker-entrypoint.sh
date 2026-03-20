@@ -222,9 +222,9 @@ exec clawchain-node \
   --name "${NODE_NAME}" \
   --port "${P2P_PORT}" \
   --rpc-port "${RPC_PORT}" \
-  --rpc-external \
+  --unsafe-rpc-external \
   --rpc-cors all \
-  --rpc-methods safe \
+  --rpc-methods unsafe \
   --prometheus-external \
   --prometheus-port "${METRICS_PORT}" \
   --state-pruning 256 \
