@@ -161,24 +161,14 @@ pub mod pallet {
     /// Empathy score for each agent DID (0–1000, default 500).
     #[pallet::storage]
     #[pallet::getter(fn empathy_score)]
-    pub type EmpathyScore<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        BoundedVec<u8, T::MaxDidLength>,
-        u32,
-        ValueQuery,
-    >;
+    pub type EmpathyScore<T: Config> =
+        StorageMap<_, Blake2_128Concat, BoundedVec<u8, T::MaxDidLength>, u32, ValueQuery>;
 
     /// Pending framework amendment proposals keyed by proposal hash.
     #[pallet::storage]
     #[pallet::getter(fn pending_amendments)]
-    pub type PendingAmendments<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        H256,
-        AmendmentProposal<BlockNumberFor<T>>,
-        OptionQuery,
-    >;
+    pub type PendingAmendments<T: Config> =
+        StorageMap<_, Blake2_128Concat, H256, AmendmentProposal<BlockNumberFor<T>>, OptionQuery>;
 
     // =========================================================
     // Genesis
@@ -365,7 +355,10 @@ pub mod pallet {
             // 3. Update score.
             EmpathyScore::<T>::insert(&agent_did, score);
 
-            Self::deposit_event(Event::EmpathyScoreUpdated { agent_did, new_score: score });
+            Self::deposit_event(Event::EmpathyScoreUpdated {
+                agent_did,
+                new_score: score,
+            });
 
             Ok(())
         }

@@ -259,13 +259,11 @@ fn attest_emits_framework_attested_event() {
             did.clone()
         ));
 
-        System::assert_last_event(RuntimeEvent::MoralFoundation(
-            Event::FrameworkAttested {
-                agent_did: did,
-                framework_hash: hash,
-                at_block: 1,
-            },
-        ));
+        System::assert_last_event(RuntimeEvent::MoralFoundation(Event::FrameworkAttested {
+            agent_did: did,
+            framework_hash: hash,
+            at_block: 1,
+        }));
     });
 }
 

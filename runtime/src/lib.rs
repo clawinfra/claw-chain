@@ -638,10 +638,8 @@ impl pallet_ibc_lite::Config for Runtime {
 pub struct MoralAgentRegistry;
 
 impl
-    pallet_moral_foundation::AgentRegistryInterface<
-        AccountId,
-        frame_support::traits::ConstU32<128>,
-    > for MoralAgentRegistry
+    pallet_moral_foundation::AgentRegistryInterface<AccountId, frame_support::traits::ConstU32<128>>
+    for MoralAgentRegistry
 {
     fn is_registered(
         did: &frame_support::BoundedVec<u8, frame_support::traits::ConstU32<128>>,
