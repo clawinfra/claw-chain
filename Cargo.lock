@@ -1221,6 +1221,7 @@ dependencies = [
  "pallet-gas-quota",
  "pallet-grandpa",
  "pallet-ibc-lite",
+ "pallet-moral-foundation",
  "pallet-offences",
  "pallet-quadratic-governance",
  "pallet-reputation",
@@ -5581,6 +5582,22 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "pallet-moral-foundation"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
 ]
 
 [[package]]

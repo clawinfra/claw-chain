@@ -626,6 +626,54 @@ impl pallet_ibc_lite::Config for Runtime {
 }
 
 // =========================================================
+// Moral Foundation Configuration
+// =========================================================
+
+/// Agent registry adapter for `pallet-moral-foundation`.
+///
+/// Maps DID-based look-ups to the `pallet-agent-registry` storage which is
+/// keyed by sequential `u64` IDs.  We perform a linear scan over all agents
+/// owned by anyone who calls `is_controller`, but in practice DIDs are
+/// short-lived in tests and the scan is bounded.
+pub struct MoralAgentRegistry;
+
+impl
+    pallet_moral_foundation::AgentRegistryInterface<
+        AccountId,
+        frame_support::traits::ConstU32<128>,
+    > for MoralAgentRegistry
+{
+    fn is_registered(
+        did: &frame_support::BoundedVec<u8, frame_support::traits::ConstU32<128>>,
+    ) -> bool {
+        // Scan the entire registry for a matching DID.
+        pallet_agent_registry::AgentRegistry::<Runtime>::iter_values()
+            .any(|info| info.did.as_slice() == did.as_slice())
+    }
+
+    fn is_controller(
+        did: &frame_support::BoundedVec<u8, frame_support::traits::ConstU32<128>>,
+        controller: &AccountId,
+    ) -> bool {
+        pallet_agent_registry::AgentRegistry::<Runtime>::iter_values()
+            .any(|info| info.did.as_slice() == did.as_slice() && &info.owner == controller)
+    }
+}
+
+parameter_types! {
+    /// Voting period for moral-foundation amendments (~7 days at 12 s/block).
+    pub const MoralVotingPeriod: BlockNumber = 50_400;
+}
+
+impl pallet_moral_foundation::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MaxDidLength = ConstU32<128>;
+    type VotingPeriod = MoralVotingPeriod;
+    type GovernanceOrigin = frame_system::EnsureRoot<AccountId>;
+    type AgentRegistry = MoralAgentRegistry;
+}
+
+// =========================================================
 // Emergency Pause Configuration (ADR-007)
 // =========================================================
 
@@ -754,6 +802,7 @@ frame_support::construct_runtime!(
         EmergencyPause: pallet_emergency_pause,
         ReputationRegime: pallet_reputation_regime,
         AuditAttestation: pallet_audit_attestation,
+        MoralFoundation: pallet_moral_foundation,
     }
 );
 
