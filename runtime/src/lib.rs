@@ -692,6 +692,35 @@ impl pallet_emergency_pause::Config for Runtime {
     type EmergencyPauseDuration = EmergencyPauseDuration;
 }
 
+// ============================================================
+// pallet-audit-attestation: AgentRegistryInterface adapter
+// ============================================================
+
+/// Adapter that implements pallet-audit-attestation's AgentRegistryInterface
+/// by delegating to pallet-agent-registry storage.
+pub struct AuditAgentRegistry;
+
+impl pallet_audit_attestation::AgentRegistryInterface<AccountId> for AuditAgentRegistry {
+    fn is_registered_agent(account: &AccountId) -> bool {
+        // Look up all agents owned by this account and check at least one is Active.
+        pallet_agent_registry::OwnerAgents::<Runtime>::get(account)
+            .iter()
+            .any(|agent_id| {
+                pallet_agent_registry::AgentRegistry::<Runtime>::get(agent_id)
+                    .map(|info| info.status == pallet_agent_registry::AgentStatus::Active)
+                    .unwrap_or(false)
+            })
+    }
+}
+
+impl pallet_audit_attestation::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+    type MaxAttestationsPerAuditor = ConstU32<500>;
+    type MaxDidLen = ConstU32<128>;
+    type AgentRegistry = AuditAgentRegistry;
+}
+
 frame_support::construct_runtime!(
     pub enum Runtime {
         System: frame_system,
@@ -724,6 +753,7 @@ frame_support::construct_runtime!(
         IbcLite: pallet_ibc_lite,
         EmergencyPause: pallet_emergency_pause,
         ReputationRegime: pallet_reputation_regime,
+        AuditAttestation: pallet_audit_attestation,
     }
 );
 
