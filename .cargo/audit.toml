@@ -1,0 +1,19 @@
+[advisories]
+
+# RUSTSEC-2026-0037: Denial of service in Quinn endpoints (quinn-proto)
+#
+# This advisory affects quinn-proto < 0.11.14. Our dependency tree already
+# resolves quinn-proto to 0.11.14 (the patched version), even though the
+# `quinn` wrapper crate itself is at 0.11.9. Cargo's semver resolver pulls in
+# quinn-proto >= 0.11.14 transitively, so the vulnerable code path is not
+# present in this build.
+#
+# A newer `quinn` wrapper release (>= 0.11.14) does not yet exist on crates.io
+# as of 2026-03-23. This exception should be removed once `quinn >= 0.11.14`
+# is published and the upstream substrate dependency is bumped accordingly.
+#
+# Verify: `cargo metadata --format-version 1 | python3 -c "import json,sys; d=json.load(sys.stdin); [print(p['version']) for p in d['packages'] if p['name']=='quinn-proto']"`
+# Expected: 0.11.14
+#
+# Tracked in: https://github.com/clawinfra/claw-chain/issues/67
+ignore = ["RUSTSEC-2026-0037"]
