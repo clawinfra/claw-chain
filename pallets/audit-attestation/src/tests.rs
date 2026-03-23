@@ -11,8 +11,8 @@
 
 use crate::mock::*;
 use crate::pallet::*;
-use crate::{self as pallet_audit_attestation, Error, Event};
 use crate::AgentRegistryInterface;
+use crate::{self as pallet_audit_attestation, Error, Event};
 use frame_support::{assert_noop, assert_ok, BoundedVec};
 use sp_core::{sr25519, Pair, H256};
 
@@ -39,13 +39,17 @@ fn summary_hash(seed: u8) -> H256 {
 
 /// Build a default SeverityCounts.
 fn default_severities() -> SeverityCounts {
-    SeverityCounts { critical: 1, high: 2, medium: 3, low: 4 }
+    SeverityCounts {
+        critical: 1,
+        high: 2,
+        medium: 3,
+        low: 4,
+    }
 }
 
 /// Build a dummy DID (fits within MaxDidLen=128).
 fn dummy_did() -> BoundedVec<u8, <Test as pallet_audit_attestation::Config>::MaxDidLen> {
-    BoundedVec::try_from(b"did:claw:agent:test".to_vec())
-        .expect("DID within MaxDidLen")
+    BoundedVec::try_from(b"did:claw:agent:test".to_vec()).expect("DID within MaxDidLen")
 }
 
 /// Build a 64-byte all-zeros signature.  The mock sig verifier accepts this
@@ -168,7 +172,9 @@ impl Pallet<Test> {
 
         // Guard: auditor must be registered.
         ensure!(
-            <Test as pallet_audit_attestation::Config>::AgentRegistry::is_registered_agent(&auditor),
+            <Test as pallet_audit_attestation::Config>::AgentRegistry::is_registered_agent(
+                &auditor
+            ),
             Error::<Test>::AuditorNotRegistered
         );
 
@@ -176,7 +182,8 @@ impl Pallet<Test> {
         let already_tracked = AuditorAttestations::<Test>::get(&auditor).contains(&target);
         if !already_tracked {
             AuditorAttestations::<Test>::try_mutate(&auditor, |list| {
-                list.try_push(target).map_err(|_| Error::<Test>::TooManyAttestations)
+                list.try_push(target)
+                    .map_err(|_| Error::<Test>::TooManyAttestations)
             })?;
         }
 
@@ -210,7 +217,12 @@ fn force_submit_stores_record_and_emits_event() {
         let target = target_hash(1);
         let summary = summary_hash(2);
 
-        assert_ok!(Pallet::<Test>::force_submit(AUDITOR, target, summary, default_severities()));
+        assert_ok!(Pallet::<Test>::force_submit(
+            AUDITOR,
+            target,
+            summary,
+            default_severities()
+        ));
 
         // Record is stored.
         let record = Attestations::<Test>::get(target).expect("record should exist");
@@ -248,19 +260,35 @@ fn force_submit_overwrite_same_target_same_auditor() {
             AUDITOR,
             target,
             summary_hash(10),
-            SeverityCounts { critical: 1, high: 0, medium: 0, low: 0 }
+            SeverityCounts {
+                critical: 1,
+                high: 0,
+                medium: 0,
+                low: 0
+            }
         ));
-        assert_eq!(Attestations::<Test>::get(target).unwrap().findings_summary_hash, summary_hash(10));
+        assert_eq!(
+            Attestations::<Test>::get(target)
+                .unwrap()
+                .findings_summary_hash,
+            summary_hash(10)
+        );
 
         // Overwrite with different summary.
         assert_ok!(Pallet::<Test>::force_submit(
             AUDITOR,
             target,
             summary_hash(99),
-            SeverityCounts { critical: 0, high: 1, medium: 0, low: 0 }
+            SeverityCounts {
+                critical: 0,
+                high: 1,
+                medium: 0,
+                low: 0
+            }
         ));
 
-        let record = Attestations::<Test>::get(target).expect("record should exist after overwrite");
+        let record =
+            Attestations::<Test>::get(target).expect("record should exist after overwrite");
         assert_eq!(record.findings_summary_hash, summary_hash(99));
         assert_eq!(record.severity_counts.high, 1);
 
@@ -274,7 +302,12 @@ fn force_submit_overwrite_same_target_same_auditor() {
 fn force_submit_unregistered_fails() {
     new_test_ext().execute_with(|| {
         assert_noop!(
-            Pallet::<Test>::force_submit(UNREGISTERED, target_hash(1), summary_hash(2), default_severities()),
+            Pallet::<Test>::force_submit(
+                UNREGISTERED,
+                target_hash(1),
+                summary_hash(2),
+                default_severities()
+            ),
             Error::<Test>::AuditorNotRegistered
         );
     });
@@ -287,7 +320,12 @@ fn force_submit_too_many_attestations_fails() {
         // Fill up to capacity.
         for i in 0u8..=255 {
             let t = H256::from([i; 32]);
-            assert_ok!(Pallet::<Test>::force_submit(AUDITOR, t, summary_hash(0), default_severities()));
+            assert_ok!(Pallet::<Test>::force_submit(
+                AUDITOR,
+                t,
+                summary_hash(0),
+                default_severities()
+            ));
         }
         // Now use non-colliding hashes (second byte varies).
         for i in 0u8..=243 {
@@ -295,7 +333,12 @@ fn force_submit_too_many_attestations_fails() {
             bytes[0] = 255;
             bytes[1] = i;
             let t = H256::from(bytes);
-            assert_ok!(Pallet::<Test>::force_submit(AUDITOR, t, summary_hash(0), default_severities()));
+            assert_ok!(Pallet::<Test>::force_submit(
+                AUDITOR,
+                t,
+                summary_hash(0),
+                default_severities()
+            ));
         }
 
         // At 500.  Next one should fail.
@@ -323,7 +366,12 @@ fn revoke_attestation_by_auditor_succeeds() {
         run_to_block(1);
 
         let target = target_hash(5);
-        assert_ok!(Pallet::<Test>::force_submit(AUDITOR, target, summary_hash(6), default_severities()));
+        assert_ok!(Pallet::<Test>::force_submit(
+            AUDITOR,
+            target,
+            summary_hash(6),
+            default_severities()
+        ));
 
         // Auditor can revoke.
         assert_ok!(AuditAttestation::revoke_attestation(
@@ -352,7 +400,12 @@ fn revoke_attestation_by_auditor_succeeds() {
 fn revoke_attestation_by_root_succeeds() {
     new_test_ext().execute_with(|| {
         let target = target_hash(7);
-        assert_ok!(Pallet::<Test>::force_submit(AUDITOR, target, summary_hash(8), default_severities()));
+        assert_ok!(Pallet::<Test>::force_submit(
+            AUDITOR,
+            target,
+            summary_hash(8),
+            default_severities()
+        ));
 
         // Root can revoke any attestation.
         assert_ok!(AuditAttestation::revoke_attestation(
@@ -368,7 +421,12 @@ fn revoke_attestation_by_root_succeeds() {
 fn revoke_attestation_not_auditor_fails() {
     new_test_ext().execute_with(|| {
         let target = target_hash(9);
-        assert_ok!(Pallet::<Test>::force_submit(AUDITOR, target, summary_hash(9), default_severities()));
+        assert_ok!(Pallet::<Test>::force_submit(
+            AUDITOR,
+            target,
+            summary_hash(9),
+            default_severities()
+        ));
 
         // AUDITOR2 did not submit this attestation.
         assert_noop!(
@@ -400,8 +458,18 @@ fn revoke_cleans_auditor_index_but_leaves_other_entries() {
         let t1 = target_hash(1);
         let t2 = target_hash(2);
 
-        assert_ok!(Pallet::<Test>::force_submit(AUDITOR, t1, summary_hash(10), default_severities()));
-        assert_ok!(Pallet::<Test>::force_submit(AUDITOR, t2, summary_hash(20), default_severities()));
+        assert_ok!(Pallet::<Test>::force_submit(
+            AUDITOR,
+            t1,
+            summary_hash(10),
+            default_severities()
+        ));
+        assert_ok!(Pallet::<Test>::force_submit(
+            AUDITOR,
+            t2,
+            summary_hash(20),
+            default_severities()
+        ));
 
         // Revoke t1 only.
         assert_ok!(AuditAttestation::revoke_attestation(
@@ -431,7 +499,12 @@ fn is_audited_returns_true_when_within_window() {
     new_test_ext().execute_with(|| {
         let target = target_hash(1);
         // Submit at block 0.
-        assert_ok!(Pallet::<Test>::force_submit(AUDITOR, target, summary_hash(1), default_severities()));
+        assert_ok!(Pallet::<Test>::force_submit(
+            AUDITOR,
+            target,
+            summary_hash(1),
+            default_severities()
+        ));
 
         // Still at block 0, max_age=0 means age==max exactly → should return true.
         assert!(Pallet::<Test>::is_audited(target, 0));
@@ -449,7 +522,12 @@ fn is_audited_returns_true_when_within_window() {
 fn is_audited_returns_false_after_revocation() {
     new_test_ext().execute_with(|| {
         let target = target_hash(3);
-        assert_ok!(Pallet::<Test>::force_submit(AUDITOR, target, summary_hash(3), default_severities()));
+        assert_ok!(Pallet::<Test>::force_submit(
+            AUDITOR,
+            target,
+            summary_hash(3),
+            default_severities()
+        ));
         assert!(Pallet::<Test>::is_audited(target, 1000));
 
         assert_ok!(AuditAttestation::revoke_attestation(
@@ -466,7 +544,12 @@ fn is_audited_max_age_zero_only_matches_current_block() {
     new_test_ext().execute_with(|| {
         let target = target_hash(4);
         // Submit at block 0.
-        assert_ok!(Pallet::<Test>::force_submit(AUDITOR, target, summary_hash(4), default_severities()));
+        assert_ok!(Pallet::<Test>::force_submit(
+            AUDITOR,
+            target,
+            summary_hash(4),
+            default_severities()
+        ));
         assert!(Pallet::<Test>::is_audited(target, 0));
 
         // Advance one block.
@@ -485,13 +568,23 @@ fn two_auditors_independent_attestations() {
     new_test_ext().execute_with(|| {
         let target = target_hash(77);
 
-        assert_ok!(Pallet::<Test>::force_submit(AUDITOR, target, summary_hash(1), default_severities()));
+        assert_ok!(Pallet::<Test>::force_submit(
+            AUDITOR,
+            target,
+            summary_hash(1),
+            default_severities()
+        ));
         // Since Attestations is keyed by target_hash only, submitting from
         // AUDITOR2 for the same target will overwrite AUDITOR's record.
         // The RFC says "Overwrite if prior attestation exists for same target+auditor" —
         // however StorageMap is keyed only by target, so the last writer wins.
         // This test documents and verifies that behaviour.
-        assert_ok!(Pallet::<Test>::force_submit(AUDITOR2, target, summary_hash(2), default_severities()));
+        assert_ok!(Pallet::<Test>::force_submit(
+            AUDITOR2,
+            target,
+            summary_hash(2),
+            default_severities()
+        ));
 
         let record = Attestations::<Test>::get(target).unwrap();
         assert_eq!(record.auditor_account, AUDITOR2);
@@ -506,7 +599,12 @@ fn two_auditors_independent_attestations() {
 fn auditor_index_tracks_multiple_targets() {
     new_test_ext().execute_with(|| {
         for i in 1u8..=10 {
-            assert_ok!(Pallet::<Test>::force_submit(AUDITOR, target_hash(i), summary_hash(i), default_severities()));
+            assert_ok!(Pallet::<Test>::force_submit(
+                AUDITOR,
+                target_hash(i),
+                summary_hash(i),
+                default_severities()
+            ));
         }
 
         let index = AuditorAttestations::<Test>::get(AUDITOR);
@@ -524,7 +622,12 @@ fn auditor_index_tracks_multiple_targets() {
 #[test]
 fn severity_counts_encode_decode_round_trip() {
     use codec::{Decode, Encode};
-    let orig = SeverityCounts { critical: 5, high: 3, medium: 7, low: 9 };
+    let orig = SeverityCounts {
+        critical: 5,
+        high: 3,
+        medium: 7,
+        low: 9,
+    };
     let encoded = orig.encode();
     let decoded = SeverityCounts::decode(&mut &encoded[..]).expect("decode succeeds");
     assert_eq!(orig, decoded);

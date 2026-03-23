@@ -242,7 +242,14 @@ pub mod pallet {
             // ---- Verify signature ----
             // Payload: target || summary_hash || SCALE-encode(severities) || SCALE-encode(block)
             ensure!(
-                Self::verify_signature(&auditor, &target, &summary_hash, &severities, current_block, &sig),
+                Self::verify_signature(
+                    &auditor,
+                    &target,
+                    &summary_hash,
+                    &severities,
+                    current_block,
+                    &sig
+                ),
                 Error::<T>::InvalidSignature
             );
 
@@ -250,7 +257,8 @@ pub mod pallet {
             let already_tracked = AuditorAttestations::<T>::get(&auditor).contains(&target);
             if !already_tracked {
                 AuditorAttestations::<T>::try_mutate(&auditor, |list| {
-                    list.try_push(target).map_err(|_| Error::<T>::TooManyAttestations)
+                    list.try_push(target)
+                        .map_err(|_| Error::<T>::TooManyAttestations)
                 })?;
             }
 
@@ -291,8 +299,7 @@ pub mod pallet {
             // Accept either a signed origin or root.
             let caller_opt = Self::ensure_signed_or_root(origin)?;
 
-            let record =
-                Attestations::<T>::get(target).ok_or(Error::<T>::AttestationNotFound)?;
+            let record = Attestations::<T>::get(target).ok_or(Error::<T>::AttestationNotFound)?;
 
             // If signed (not root), verify caller is the original auditor.
             if let Some(ref caller) = caller_opt {
