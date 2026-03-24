@@ -1210,6 +1210,7 @@ dependencies = [
  "pallet-agent-did",
  "pallet-agent-receipts",
  "pallet-agent-registry",
+ "pallet-audit-attestation",
  "pallet-aura",
  "pallet-authorship",
  "pallet-bags-list",
@@ -5379,6 +5380,21 @@ dependencies = [
  "log",
  "pallet-balances",
  "pallet-reputation",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+]
+
+[[package]]
+name = "pallet-audit-attestation"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
