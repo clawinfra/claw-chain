@@ -15,6 +15,7 @@ members = [
     "pallets/emergency-pause",
     "pallets/reputation-regime",
     "pallets/audit-attestation",
+    "pallets/moral-foundation",
 ]
 resolver = "2"
 
@@ -117,6 +118,7 @@ pallet-anon-messaging = { path = "pallets/anon-messaging", default-features = fa
 pallet-emergency-pause = { path = "pallets/emergency-pause", default-features = false }
 pallet-reputation-regime = { path = "pallets/reputation-regime", default-features = false }
 pallet-audit-attestation = { path = "pallets/audit-attestation", default-features = false }
+pallet-moral-foundation = { path = "pallets/moral-foundation", default-features = false }
 
 # Serde
 serde = { version = "1.0", features = ["derive"] }
