@@ -16,4 +16,14 @@
 # Expected: 0.11.14
 #
 # Tracked in: https://github.com/clawinfra/claw-chain/issues/67
-ignore = ["RUSTSEC-2026-0037"]
+# RUSTSEC-2025-0161: libsecp256k1 is unmaintained
+#
+# libsecp256k1 0.7.2 is pulled in transitively via sp-io and sp-core (Substrate).
+# This is an "unmaintained" advisory, not a vulnerability. The crate still
+# functions correctly for ECDSA secp256k1 operations. Migrating to k256 would
+# require patching Substrate's own crypto crates, which is not feasible until
+# upstream (paritytech/polkadot-sdk) addresses it.
+#
+# Tracked in: https://github.com/clawinfra/claw-chain/issues/98
+#
+ignore = ["RUSTSEC-2026-0037", "RUSTSEC-2025-0161"]
