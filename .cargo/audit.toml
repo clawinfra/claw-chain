@@ -16,6 +16,7 @@
 # Expected: 0.11.14
 #
 # Tracked in: https://github.com/clawinfra/claw-chain/issues/67
+#
 # RUSTSEC-2025-0161: libsecp256k1 is unmaintained
 #
 # libsecp256k1 0.7.2 is pulled in transitively via sp-io and sp-core (Substrate).
@@ -26,4 +27,29 @@
 #
 # Tracked in: https://github.com/clawinfra/claw-chain/issues/98
 #
-ignore = ["RUSTSEC-2026-0037", "RUSTSEC-2025-0161"]
+# RUSTSEC-2026-0087: Cranelift f64x2.splat SIMD miscompilation
+# RUSTSEC-2026-0006: Cranelift f64.copysign sign-bit corruption
+#
+# Not exposed: claw-chain does not include pallet-contracts; only trusted runtime
+# WASM (compiled by us) executes via sc-executor. Untrusted WASM execution path
+# does not exist.
+#
+# Both CVEs affect Cranelift's JIT compiler when executing UNTRUSTED WebAssembly.
+# They are NOT reachable in claw-chain because:
+#
+#   1. claw-chain does NOT include pallet-contracts in construct_runtime!
+#      Verified: `grep -r "pallet_contracts\|pallet-contracts" runtime/ node/ pallets/`
+#      returns NO results (checked 2026-04-20).
+#
+#   2. Only TRUSTED runtime WASM (compiled from runtime/src/ by our own CI)
+#      executes via sc-executor. There is no untrusted-WASM execution path.
+#
+#   3. The attack vector requires an attacker-supplied WASM binary reaching
+#      the Cranelift JIT. In claw-chain, all WASM is the chain's own runtime
+#      blob, produced by CI and upgraded only via on-chain governance.
+#
+# Will be re-evaluated if pallet-contracts is ever added.
+# Root cause: wasmtime 35.0.0 via sc-executor 0.47. Real fix: polkadot-sdk
+# upgrade to wasmtime 36+. Tracked: https://github.com/clawinfra/claw-chain/issues/101
+#
+ignore = ["RUSTSEC-2026-0037", "RUSTSEC-2025-0161", "RUSTSEC-2026-0087", "RUSTSEC-2026-0006"]
