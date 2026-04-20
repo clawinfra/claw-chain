@@ -132,3 +132,17 @@ futures = { version = "0.3" }
 
 [profile.release]
 panic = "unwind"
+
+# ============================================================
+# Yanked crate patches
+# ============================================================
+# core2 v0.4.0 was yanked from crates.io (2021-03-16) but is the only version
+# satisfying `^0.4.0` required by multihash v0.17.0, pulled in transitively:
+#   sc-network 0.55.1 → litep2p 0.13.0 → multihash 0.17.0 → core2 ^0.4.0
+# Without this patch, `cargo update` fails with:
+#   error: all dependencies containing yanked versions: core2 v0.4.0
+# We vendor the original 0.4.0 source (Apache-2.0, unchanged) under vendor/core2/.
+# Remove this patch once sc-network migrates to a litep2p version that uses
+# multihash 0.19+ (which drops core2 entirely).
+[patch.crates-io]
+core2 = { path = "vendor/core2" }
