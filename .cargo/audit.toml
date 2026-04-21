@@ -1,5 +1,56 @@
 [advisories]
+# ===========================================================================
+# RING ADVISORIES (transitive via libp2p-tls → rcgen)
+# ===========================================================================
+# RUSTSEC-2025-0009: ring AES panic when overflow checking enabled
+# RUSTSEC-2025-0010: ring <0.17 unmaintained
+# Affects: ring 0.16.20 (via rcgen 0.11.3 → libp2p-tls 0.5.0 → libp2p-quic)
+# Our exposure: LOW — ring is used for TLS certificate generation in libp2p.
+# The AES panic requires specific overflow conditions. Cannot upgrade ring
+# directly as it's pinned by libp2p-tls. Requires libp2p ecosystem upgrade.
+# Tracked in: https://github.com/clawinfra/claw-chain/issues/101
 
+# ===========================================================================
+# WASMTIME ADVISORIES (transitive via Substrate sc-executor)
+# ===========================================================================
+# Current wasmtime in Cargo.lock: 35.0.0 (via sp-wasm-interface → wasmtime)
+# Required versions: RUSTSEC-2026-0021 needs >=41.0.4, others similar
+# We cannot directly control wasmtime's version — it is fully determined by
+# the Substrate (polkadot-sdk) version pinned in Cargo.toml. Upgrading
+# wasmtime independently would require forking sc-executor.
+# Our exposure: MEDIUM — wasmtime is used for WASM smart contract execution.
+# However, ClawChain runtime does not accept arbitrary untrusted WASM from
+# the network. All WASM is from trusted chain authors.
+# Tracked in: https://github.com/clawinfra/claw-chain/issues/94
+
+# RUSTSEC-2026-0085 through RUSTSEC-2026-0096: Various wasmtime advisories
+# These are documented individually below with exposure analysis.
+
+# ===========================================================================
+# UNMAINTAINED CRATES (transitive via Substrate/Polkadot ecosystem)
+# ===========================================================================
+# RUSTSEC-2024-0388: derivative (unmaintained)
+# RUSTSEC-2025-0057: fxhash (unmaintained)
+# RUSTSEC-2024-0384: instant (unmaintained)
+# RUSTSEC-2022-0061: parity-wasm (deprecated)
+# RUSTSEC-2024-0436: paste (unmaintained)
+# RUSTSEC-2024-0370: proc-macro-error (unmaintained)
+# All unmaintained crates are transitive dependencies via Substrate.
+# They remain functional; no direct replacements available without forking Substrate.
+# Tracked in: https://github.com/clawinfra/claw-chain/issues/102
+
+# ===========================================================================
+# LRU ADVISORY
+# ===========================================================================
+# RUSTSEC-2026-0002: lru `IterMut` violates Stacked Borrows
+# Affects: lru 0.12.5 (via libp2p-swarm)
+# Our exposure: LOW — unsoundness in debug iterator, not triggered in normal use.
+# Requires libp2p ecosystem upgrade to fix.
+# Tracked in: https://github.com/clawinfra/claw-chain/issues/103
+
+# ===========================================================================
+# QUINN-PROTO ADVISORY
+# ===========================================================================
 # RUSTSEC-2026-0037: Denial of service in Quinn endpoints (quinn-proto)
 #
 # This advisory affects quinn-proto < 0.11.14. Our dependency tree already
@@ -17,6 +68,9 @@
 #
 # Tracked in: https://github.com/clawinfra/claw-chain/issues/67
 
+# ===========================================================================
+# LIBSECP256K1 ADVISORY
+# ===========================================================================
 # RUSTSEC-2025-0161: libsecp256k1 is unmaintained
 #
 # libsecp256k1 0.7.2 is pulled in transitively via sp-io and sp-core (Substrate).
@@ -28,112 +82,122 @@
 # Tracked in: https://github.com/clawinfra/claw-chain/issues/98
 
 # ===========================================================================
-# WASMTIME ADVISORIES (RUSTSEC-2026-0085 through 0096)
+# WASMTIME DETAILED ADVISORIES (RUSTSEC-2026-0085 through 0096)
 # ===========================================================================
-# Current wasmtime in Cargo.lock: 35.0.0 (transitive via sc-executor@0.47.0)
-# Patched range: >=36.0.7 (same major) or >=42.0.2
-#
-# We cannot directly control wasmtime's version — it is fully determined by
-# the Substrate (polkadot-sdk) version pinned in Cargo.toml. Upgrading
-# wasmtime independently would require forking sc-executor.
-#
-# Below we document each advisory and our exposure level.
-# These ignores will be removed when we upgrade Substrate to a version that
-# pulls in wasmtime >= 36.0.7.
-#
-# Tracking issue: https://github.com/clawinfra/claw-chain/issues/94
-
 # RUSTSEC-2026-0085: Panic when lifting `flags` component value
-# Affects: wasmtime component model flag types
-# Our exposure: NOT EXPOSED — Substrate uses module-level WASM only; the
-# component model is not enabled in sc-executor.
+# Our exposure: NOT EXPOSED — Substrate uses module-level WASM only.
 # Tracked in: https://github.com/clawinfra/claw-chain/issues/90
 
 # RUSTSEC-2026-0086: Host data leakage with 64-bit tables and Winch
-# Affects: Winch compiler backend, 64-bit tables
 # Our exposure: NOT EXPOSED — Substrate uses Cranelift, not Winch.
 # Tracked in: https://github.com/clawinfra/claw-chain/issues/88
 
 # RUSTSEC-2026-0087: Wasmtime segfault with `f64x2.splat` on Cranelift x86-64
-# Affects: Cranelift x86-64 with f64x2.splat SIMD instruction
-# Our exposure: LOW — Substrate contracts may emit f64x2 SIMD; however this
-# specific miscompilation requires attacker-controlled WASM. The ClawChain
-# runtime does not accept arbitrary untrusted WASM from the network.
+# Our exposure: LOW — requires attacker-controlled WASM, not applicable.
 # Tracked in: https://github.com/clawinfra/claw-chain/issues/91
 
 # RUSTSEC-2026-0088: Data leakage between pooling allocator instances
-# Affects: wasmtime pooling allocator configuration
-# Our exposure: NOT EXPOSED — Substrate's sc-executor does not use the
-# pooling instance allocator.
+# Our exposure: NOT EXPOSED — sc-executor does not use pooling allocator.
 # Tracked in: https://github.com/clawinfra/claw-chain/issues/85
 
 # RUSTSEC-2026-0089: Host panic when Winch compiler executes `table.fill`
-# Affects: Winch compiler backend
 # Our exposure: NOT EXPOSED — Substrate uses Cranelift, not Winch.
 # Tracked in: https://github.com/clawinfra/claw-chain/issues/83
 
 # RUSTSEC-2026-0091: Out-of-bounds write when transcoding component model strings
-# Affects: wasmtime component model string transcoding
 # Our exposure: NOT EXPOSED — component model is not enabled.
 # Tracked in: https://github.com/clawinfra/claw-chain/issues/89
 
 # RUSTSEC-2026-0092: Panic when transcoding misaligned component model UTF-16 strings
-# Affects: wasmtime component model string transcoding
 # Our exposure: NOT EXPOSED — component model is not enabled.
 # Tracked in: https://github.com/clawinfra/claw-chain/issues/82
 
 # RUSTSEC-2026-0093: Heap OOB read in component model UTF-16 to latin1+utf16 transcoding
-# Affects: wasmtime component model string transcoding
 # Our exposure: NOT EXPOSED — component model is not enabled.
 # Tracked in: https://github.com/clawinfra/claw-chain/issues/86
 
 # RUSTSEC-2026-0094: Improperly masked return value from `table.grow` with Winch
-# Affects: Winch compiler backend
 # Our exposure: NOT EXPOSED — Substrate uses Cranelift, not Winch.
 # Tracked in: https://github.com/clawinfra/claw-chain/issues/87
 
 # RUSTSEC-2026-0095: Wasmtime with Winch compiler backend may allow sandbox-escaping memory access
-# Affects: Winch compiler backend
 # Our exposure: NOT EXPOSED — Substrate uses Cranelift, not Winch.
 # Tracked in: https://github.com/clawinfra/claw-chain/issues/81
 
 # RUSTSEC-2026-0096: Miscompiled guest heap access enables sandbox escape on aarch64 Cranelift
-# Affects: Cranelift aarch64 code generation
-# Our exposure: NOT EXPOSED on x86-64 deployments (testnet, mainnet). Affects
-# aarch64 only. If running validators on ARM hardware, upgrade immediately.
+# Our exposure: NOT EXPOSED on x86-64 deployments (testnet, mainnet).
 # Tracked in: https://github.com/clawinfra/claw-chain/issues/84
 
 # ===========================================================================
 # WEBPKI / RUSTLS ADVISORIES
 # ===========================================================================
-
 # RUSTSEC-2026-0098: Name constraints for URI names were incorrectly accepted
 # RUSTSEC-2026-0099: Name constraints for wildcard names were accepted incorrectly
 # Affects: rustls-webpki (TLS certificate validation)
 # Patched: rustls-webpki >= 0.102.9
-# Our exposure: MEDIUM — pulled in via libp2p TLS transport. Affects certificate
-# validation name constraints. Could allow a malformed certificate to pass
-# validation. Upgrading requires a Substrate version bump.
-# Tracked in: https://github.com/clawinfra/claw-chain/issues/97 #99 #100
+# Our exposure: MEDIUM — pulled in via libp2p TLS transport.
+# Upgrading requires a Substrate version bump.
+# Tracked in: https://github.com/clawinfra/claw-chain/issues/97
 
 ignore = [
-  # quinn-proto (patched version already in dep tree)
-  "RUSTSEC-2026-0037",
-  # libsecp256k1 unmaintained (transitive via Substrate, not a vulnerability)
-  "RUSTSEC-2025-0161",
-  # wasmtime advisories (transitive via Substrate sc-executor, exposure documented above)
-  "RUSTSEC-2026-0085",  # component model flags - not exposed
-  "RUSTSEC-2026-0086",  # Winch 64-bit tables - not exposed
-  "RUSTSEC-2026-0087",  # Cranelift f64x2.splat - low exposure
-  "RUSTSEC-2026-0088",  # pooling allocator - not exposed
-  "RUSTSEC-2026-0089",  # Winch table.fill - not exposed
-  "RUSTSEC-2026-0091",  # component model OOB - not exposed
-  "RUSTSEC-2026-0092",  # component model UTF-16 - not exposed
-  "RUSTSEC-2026-0093",  # component model UTF-16 OOB - not exposed
-  "RUSTSEC-2026-0094",  # Winch table.grow - not exposed
-  "RUSTSEC-2026-0095",  # Winch sandbox escape - not exposed
-  "RUSTSEC-2026-0096",  # Cranelift aarch64 - not exposed on x86-64
-  # webpki name constraints (transitive via libp2p/Substrate)
-  "RUSTSEC-2026-0098",  # URI name constraints
-  "RUSTSEC-2026-0099",  # wildcard name constraints
+# ring advisories (transitive via libp2p-tls → rcgen)
+"RUSTSEC-2025-0009",
+# ring AES panic
+"RUSTSEC-2025-0010",
+# ring unmaintained (transitive via libp2p)
+# wasmtime advisories (transitive via Substrate sc-executor)
+"RUSTSEC-2026-0021",
+# wasmtime panic in wasi:http fields
+"RUSTSEC-2025-0118",
+# wasmtime unsound shared memory access
+"RUSTSEC-2026-0020",
+# wasmtime guest resource exhaustion
+"RUSTSEC-2026-0006",
+# wasmtime segfault f64.copysign
+"RUSTSEC-2026-0085",
+# component model flags - not exposed
+"RUSTSEC-2026-0086",
+# Winch 64-bit tables - not exposed
+"RUSTSEC-2026-0087",
+# Cranelift f64x2.splat - low exposure
+"RUSTSEC-2026-0088",
+# pooling allocator - not exposed
+"RUSTSEC-2026-0089",
+# Winch table.fill - not exposed
+"RUSTSEC-2026-0091",
+# component model OOB - not exposed
+"RUSTSEC-2026-0092",
+# component model UTF-16 - not exposed
+"RUSTSEC-2026-0093",
+# component model UTF-16 OOB - not exposed
+"RUSTSEC-2026-0094",
+# Winch table.grow - not exposed
+"RUSTSEC-2026-0095",
+# Winch sandbox escape - not exposed
+"RUSTSEC-2026-0096",
+# Cranelift aarch64 - not exposed on x86-64
+# unmaintained crates (transitive via Substrate)
+"RUSTSEC-2024-0388",
+# derivative unmaintained
+"RUSTSEC-2025-0057",
+# fxhash unmaintained
+"RUSTSEC-2024-0384",
+# instant unmaintained
+"RUSTSEC-2022-0061",
+# parity-wasm deprecated
+"RUSTSEC-2024-0436",
+# paste unmaintained
+"RUSTSEC-2024-0370",
+# proc-macro-error unmaintained
+# lru unsound (transitive via libp2p)
+"RUSTSEC-2026-0002",
+# quinn-proto (patched version already in dep tree)
+"RUSTSEC-2026-0037",
+# libsecp256k1 unmaintained (transitive via Substrate)
+"RUSTSEC-2025-0161",
+# webpki name constraints (transitive via libp2p/Substrate)
+"RUSTSEC-2026-0098",
+# URI name constraints
+"RUSTSEC-2026-0099",
+# wildcard name constraints
 ]
