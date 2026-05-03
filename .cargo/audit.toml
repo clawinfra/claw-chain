@@ -200,4 +200,6 @@ ignore = [
 # URI name constraints
 "RUSTSEC-2026-0099",
 # wildcard name constraints
+  "RUSTSEC-2026-0104", # rustls-webpki CRL panic (LOW exposure, fix requires libp2p upgrade)
+  "RUSTSEC-2026-0105", # core2 unmaintained/yanked (LOW exposure, fix in Substrate upgrade)
 ]
