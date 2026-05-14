@@ -9,6 +9,8 @@ members = [
     "pallets/task-market",
     "pallets/quadratic-governance",
     "pallets/agent-receipts",
+    "pallets/gas-quota",
+    "pallets/rpc-registry",
 ]
 resolver = "2"
 
