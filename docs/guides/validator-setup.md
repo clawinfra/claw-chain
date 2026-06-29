@@ -741,7 +741,7 @@ sudo systemctl start clawchain-validator
 ## Additional Resources
 
 - **Architecture overview:** [docs/architecture/overview.md](architecture/overview.md)
-- **Deployment guide (Podman/Quadlet):** [docs/deployment.md](deployment.md)
+- **Deployment guide (Podman/Quadlet):** [docs/guides/deploy-node.md](deploy-node.md)
 - **Docker deployment:** [deploy/Dockerfile.validator](../deploy/Dockerfile.validator)
 - **Docker Compose (all-in-one):** [deploy/docker-compose.validator.yml](../deploy/docker-compose.validator.yml)
 - **Polkadot.js Apps:** https://polkadot.js.org/apps/

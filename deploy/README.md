@@ -181,9 +181,9 @@ ss -tulpn | grep -E ':(9944|9615|30333)'
 
 ## 📚 Documentation
 
-- Full deployment guide: [docs/deployment.md](../docs/deployment.md)
-- Architecture: See ASCII diagram in deployment.md
-- Scaling plans: Phase 1/2/3 in deployment.md
+- Full deployment guide: [docs/guides/deploy-node.md](../docs/guides/deploy-node.md)
+- Architecture: See ASCII diagram in deploy-node.md
+- Scaling plans: Phase 1/2/3 in deploy-node.md
 
 ## 🆘 Support
 
